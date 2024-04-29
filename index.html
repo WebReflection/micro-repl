@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spike 3</title>
+  <script type="module">
+    import dedent from 'https://cdn.jsdelivr.net/npm/codedent/es.js';
+    import initSpike3 from './index.js';
+    connect.onclick = async () => {
+
+      connect.disabled = true;
+
+      // intercept errors or explicit closing intent
+      const disconnected = error => {
+        connect.disabled = false;
+        if (error) console.error(error);
+      };
+
+      // resolves spike3 once connected
+      const connected = async spike3 => {
+        // release the button on errors
+        spike3.closed.then(disconnected, disconnected);
+
+        // there is an active state
+        console.log('Spike3 active', spike3.active);
+
+        // once initialized, the REPL welcome message can be
+        // fully ignored or showed
+        console.log(await spike3.output);
+
+        // each `write` wait for a result
+        await spike3.write('help()');
+        // where the output can be read
+        console.log(await spike3.output);
+
+        // even more complex code would stop
+        // once finalized / executed (see runloop)
+        await spike3.write(dedent(`
+          # code from https://edanahy.github.io/WebSPIKE/SPIKE3/WebIDE/
+          # also works as expected
+          from hub import light_matrix
+          import runloop
+
+          async def main():
+              # write your code here
+              await light_matrix.write("Hello World!")
+
+          runloop.run(main())
+        `));
+
+
+        // this works for any Python code
+        await spike3.write(dedent(`
+          def test():
+              return 1 + 2
+
+          print(test())
+        `));
+        console.log(await spike3.output);
+
+        // we can close it without errors
+        await spike3.close();
+
+        // once closed it throws on write and read
+        // but the result would be still there
+        console.log('Spike3 active', spike3.active);
+
+        // but with computation, the final line/result is there
+        console.info('last result', await spike3.result);
+      };
+
+      initSpike3().then(
+        connected,
+        disconnected,
+      );
+    };
+  </script>
+</head>
+<body>
+  <button id="connect">connect</button>
+</body>
+</html>
