@@ -6,12 +6,28 @@ const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 
 const error = action => {
   throw new Error(`Unable to ${action} a closed SerialPort`);
-}
+};
 
-export default async (options = { baudRate: 115200 }) => {
-  // ask for a port, let it throw if not selected or if it fails
-  const port = await navigator.serial.requestPort();
-  await port.open(options);
+const options = {
+  baudRate: 115200,
+  onceClosed(error) {
+    if (error) console.error(error);
+  },
+};
+
+export default async ({
+  baudRate = options.baudRate,
+  onceClosed = options.onceClosed,
+} = options) => {
+  let port;
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate });
+  }
+  catch (error) {
+    onceClosed(error);
+    throw error;
+  }
 
   // create the reader
   const decoder = new TextDecoderStream;
@@ -23,6 +39,7 @@ export default async (options = { baudRate: 115200 }) => {
   const writerClosed = encoder.readable.pipeTo(port.writable);
   const writer = encoder.writable.getWriter();
 
+  // internal helpers
   const uuid = `# ${crypto.randomUUID()}`;
   const eop = `${uuid}${ENTER}`;
   const ignore = new Set([
@@ -30,14 +47,19 @@ export default async (options = { baudRate: 115200 }) => {
     'paste mode; Ctrl-C to cancel, Ctrl-D to finish',
   ]);
 
-  await writer.write(CONTROL_C);
-  await writer.write(eop);
-
   let output = '';
   let result = '';
   let active = true;
   let wait = Promise.withResolvers();
-  let closed = Promise.withResolvers();
+
+  try {
+    await writer.write(CONTROL_C);
+    await writer.write(eop);
+  }
+  catch (error) {
+    onceClosed(error);
+    throw error;
+  }
 
   (async () => {
     while (true) {
@@ -47,11 +69,13 @@ export default async (options = { baudRate: 115200 }) => {
         break;
       }
       output += value;
+      if (output.endsWith(`${eop}>>> `))
+        output = output.slice(0, -4);
       if (output.endsWith(eop)) {
         const out = [];
         for (const line of output.split(ENTER)) {
-          if (!line.includes(uuid) && !ignore.has(line))
-            out.push(line.replace(/^=== \n/, ''));
+          if (ignore.has(line) || line.includes(uuid)) continue;
+          out.push(line.replace(/^=== \n/, ''));
         }
         output = '';
         if (out[0] === '>>> ') {
@@ -59,20 +83,17 @@ export default async (options = { baudRate: 115200 }) => {
           out[0] = out[0].replace(/^=== /, '>>> ');
         }
         result = out.at(-2);
-        wait.resolve(out.join(ENTER));
+        wait.resolve(out.join(ENTER).trimStart());
       }
     }
   })().catch(async error => {
     active = false;
-    closed.reject(error);
+    onceClosed(error);
   });
 
   return {
     /** @type {boolean} */
     get active() { return active; },
-
-    /** @type {Promise<null | error>} */
-    get closed() { return closed.promise; },
 
     /** @type {Promise<string>} */
     get output() {
@@ -99,23 +120,22 @@ export default async (options = { baudRate: 115200 }) => {
         await writerClosed;
         await port.close();
         output = '';
-        closed.resolve(null);
+        onceClosed(null);
       }
     },
 
     /**
      * Write code to the active port, throws otherwise.
-     * @param {string | string[]} code 
+     * @param {string} code 
      */
     write: async code => {
       if (!active) error('write');
-      const lines = [].concat(code).join('');
       await wait.promise;
+      wait = Promise.withResolvers();
       await writer.write(CONTROL_E);
-      for (const line of lines.split(LINE_SEPARATOR))
+      for (const line of code.split(LINE_SEPARATOR))
         await writer.write(line + ENTER);
       await writer.write(CONTROL_D);
-      wait = Promise.withResolvers();
       await writer.write(eop);
     },
   };
