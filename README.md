@@ -47,10 +47,10 @@ Once a `repl` has been successfully initialized, it offers this *API*:
     onceClosed(error: Error | null): void;
 }) => Promise<{
     readonly active: boolean;
-    readonly output: Promise<string>;
     readonly result: Promise<string>;
-    close: () => Promise<...>;
+    readonly output: Promise<string>;
     write: (code: string) => Promise<...>;
+    close: () => Promise<...>;
 }>
 ```
 
