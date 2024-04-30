@@ -36,7 +36,7 @@ The easiest way to use this module is via *CDN*:
 </script>
 ```
 
-#### TypeScript signature
+#### TypeScript signaturehttps://github.com/gabrielsessions/pyrepl-js
 
 Once a `repl` has been successfully initialized, it offers this *API*:
 
@@ -88,7 +88,7 @@ await repl.close();
 repl.active; // false
 ```
 
-## Troubleshooting
+### Troubleshooting
 
 If you are on Linux and you can't see your *Prime* you can try to force-enable it by writing the following content into `/etc/udev/rules.d/50-myusb.rules`:
 
@@ -99,3 +99,7 @@ KERNEL=="ttyACM0",MODE="0666"
 After a reboot, this instruction should enable it and you should see it selectable.
 
 ![ttyACM0 selectable](./css/spike.png)
+
+### Credits
+
+This project has been inspired by [pyrepl-js](https://github.com/gabrielsessions/pyrepl-js) but because I think *React* and *TypeScript*, plus the rest of the logic, was a bit too much for a basic core *REPL*, I've decided to create a minimal *JS* standard module able to do pretty much the same in way less code to maintain. Feel free to use that project if you want a more rich *UI* around the connection, events instead of just promises to deal with unbuffered data as sent by the controller, and everything else in there which I didn't need to create those live demoes.
