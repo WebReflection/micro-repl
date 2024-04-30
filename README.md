@@ -87,3 +87,15 @@ await repl.close();
 // check the board status again
 repl.active; // false
 ```
+
+## Troubleshooting
+
+If you are on Linux and you can't see your *Prime* you can try to force-enable it by writing the following content into `/etc/udev/rules.d/50-myusb.rules`:
+
+```
+KERNEL=="ttyACM0",MODE="0666"
+```
+
+After a reboot, this instruction should enable it and you should see it selectable.
+
+![ttyACM0 selectable](./css/spike.png)
