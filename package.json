@@ -4,6 +4,7 @@
   "type": "module",
   "main": "./micro-repl.js",
   "module": "./micro-repl.js",
+  "unpkg": "./micro-repl.js",
   "exports": {
     ".": "./micro-repl.js"
   },

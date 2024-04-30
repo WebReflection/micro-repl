@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MicroPython REPL</title>
+  <title>MicroPython REPL Demo</title>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -23,7 +23,7 @@
   </style>
   <script type="module">
     import dedent from 'https://cdn.jsdelivr.net/npm/codedent/es.js';
-    import init from './micro-repl.js';
+    import init from 'https://esm.run/micro-repl';
 
     const show = textContent => {
       output.append(

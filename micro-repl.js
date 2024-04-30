@@ -4,12 +4,24 @@ const CONTROL_E = '\x05';
 const CONTROL_D = '\x04';
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 
+/**
+ * Common error for `read` or `write` when the REPL
+ * is not active anymore.
+ * @param {string} action
+ */
 const error = action => {
   throw new Error(`Unable to ${action} a closed SerialPort`);
 };
 
+// default `init(options)` values
 const options = {
   baudRate: 115200,
+  /**
+   * Invoked once the repl has been closed or an
+   * error occurred. In the former case `error` is `null`,
+   * in every other case the `error` is what the REPL produced.
+   * @param {Error?} error
+   */
   onceClosed(error) {
     if (error) console.error(error);
   },
