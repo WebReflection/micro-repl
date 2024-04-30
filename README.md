@@ -2,7 +2,7 @@
 
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
-  * **[Live JS Demo](https://webreflection.github.io/micro-repl/)** successfully tested on [Spike Prime](https://spike.legoeducation.com/prime/lobby/).
+  * **[Live JS Demo](https://webreflection.github.io/micro-repl/)** successfully tested on [Spike Prime](https://spike.legoeducation.com/prime/lobby/) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the *Spike* 🤯
 
 - - -
