@@ -57,8 +57,8 @@ Once a `repl` has been successfully initialized, it offers this *API*:
 #### Signature description
 
   * **repl.active** as `boolean` - it's `true` when the *REPL* is active and running, `false` otherwise.
-  * **repl.output** as `Promise<string>` - it awaits for the last executed code to execute and returns whatever that code produced, including the written code itself.
-  * **repl.result** as `Promise<string>` - it contains the last line produced by the last executed code. Please note this throws an error if the `active` state is not `true`.
+  * **repl.result** as `Promise<string>` - it contains the last line produced by the last executed code.
+  * **repl.output** as `Promise<string>` - it awaits for the last executed code to execute and returns whatever that code produced, including the written code itself. Please note this throws an error if the `active` state is not `true`.
   * **repl.write(code)** as `(code:string) => Promise<void>` - it writes code to the boards' *REPL* and it fulfills after all code has been sent. Please note this throws an error if the `active` state is not `true`.
   * **repl.close()** as `() => Promise<void>` - it detaches all streams and gracefully clean up the `repl` state right before disconnecting it.
 
