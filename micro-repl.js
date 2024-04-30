@@ -77,6 +77,7 @@ export default async ({
     while (true) {
       const { value, done } = await reader.read();
       if (done) {
+        wait.resolve('');
         reader.releaseLock();
         break;
       }

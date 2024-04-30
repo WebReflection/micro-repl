@@ -2,7 +2,7 @@
 
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
-**[Spike3 Live Demo](https://webreflection.github.io/micro-repl/)**
+**[Live Demo](https://webreflection.github.io/micro-repl/)** successfully tested on [Spike Prime](https://spike.legoeducation.com/prime/lobby/).
 
 - - -
 
@@ -37,16 +37,33 @@ The easiest way to use this module is via *CDN*:
 
 Once a `repl` has been successfully initialized, it offers this *API*:
 
+```ts
+// The default export TS signature
+({ baudRate, onceClosed, }?: {
+    baudRate: number; // default: 115200
+    onceClosed(error: Error | null): void;
+}) => Promise<{
+    readonly active: boolean;
+    readonly output: Promise<string>;
+    readonly result: Promise<string>;
+    close: () => Promise<...>;
+    write: (code: string) => Promise<...>;
+}>
+```
+
   * **repl.active** as `boolean` - it's `true` when the *REPL* is active and running, `false` otherwise.
   * **repl.output** as `Promise<string>` - it awaits for the last executed code to execute and returns whatever that code produced, including the written code itself.
-  * **repl.result** as `Promise<string>` - it contains the last line produced by the last executed code.
-  * **repl.write(code)** as `(code:string) => Promise<void>` - it writes code to the boards' *REPL* and it fulfills after all code has been sent.
+  * **repl.result** as `Promise<string>` - it contains the last line produced by the last executed code. Please note this throws an error if the `active` state is not `true`.
+  * **repl.write(code)** as `(code:string) => Promise<void>` - it writes code to the boards' *REPL* and it fulfills after all code has been sent. Please note this throws an error if the `active` state is not `true`.
   * **repl.close()** as `() => Promise<void>` - it detaches all streams and gracefully clean up the `repl` state right before disconnecting it.
 
 ### Example
 
 ```js
-// after initializing a REPL, write code to it:
+// check the board status
+repl.active; // true
+
+// write code into the REPL
 await repl.write('print("Hello MicroPython")');
 
 // wait/check the produced REPL outcome
@@ -61,4 +78,7 @@ await repl.result;  // "Hello MicroPython"
 
 // disconnect the board
 await repl.close();
+
+// check the board status again
+repl.active; // false
 ```
