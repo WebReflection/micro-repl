@@ -6,7 +6,7 @@ An easy, SerialPort based, MicroPython REPL for micro controllers.
 
 - - -
 
-## Documentation
+## How To / Documentation
 
 The easiest way to use this module is via *CDN*:
 
