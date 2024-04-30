@@ -35,6 +35,8 @@ The easiest way to use this module is via *CDN*:
 </script>
 ```
 
+#### TypeScript signature
+
 Once a `repl` has been successfully initialized, it offers this *API*:
 
 ```ts
@@ -50,6 +52,8 @@ Once a `repl` has been successfully initialized, it offers this *API*:
     write: (code: string) => Promise<...>;
 }>
 ```
+
+#### Signature description
 
   * **repl.active** as `boolean` - it's `true` when the *REPL* is active and running, `false` otherwise.
   * **repl.output** as `Promise<string>` - it awaits for the last executed code to execute and returns whatever that code produced, including the written code itself.
