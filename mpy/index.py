@@ -1,5 +1,6 @@
 from pyscript import document, window
 
+from pyscript.ffi import to_js
 from pyscript.js_modules.dedent import default as dedent
 from pyscript.js_modules.micro_repl import default as init
 
@@ -15,15 +16,10 @@ def show(content):
     code.textContent = content
     output.append(code)
 
-def onclick(event):
+async def onclick(event):
     connect.disabled = True
     output.replaceChildren()
-    # TODO: async listeners are currently broken in MicroPython
-    # TODO: destructuring is also currently broken in MicroPython
-    #       which is why I need to pass the defaults anyway
-    init({ "baudRate": 115200, "onceClosed": once_closed }).then(execute)
-
-async def execute(spike3):
+    spike3 = await init(to_js({ "onceClosed": once_closed }))
     print('Spike3 active', spike3.active)
     show(await spike3.output)
     await spike3.write('help()')

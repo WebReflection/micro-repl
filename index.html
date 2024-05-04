@@ -26,56 +26,41 @@
           connect.disabled = false;
           if (error) console.warn(error);
         }
-      }).then(async spike3 => {
-        globalThis.spike3 = spike3;
+      }).then(async board => {
+        globalThis.board = board;
 
         // there is an active state
-        console.info('Spike3 active', spike3.active);
+        console.info('Board active', board.active);
 
         // once initialized, the REPL welcome message can be
         // fully ignored or showed
-        show(await spike3.output);
-
-        // each `write` wait for a result
-        await spike3.write('help()');
-        // where the output can be read
-        show(await spike3.output);
-
-        // even more complex code would stop
-        // once finalized / executed (see runloop)
-        await spike3.write(dedent(`
-          # code from https://edanahy.github.io/WebSPIKE/SPIKE3/WebIDE/
-          # also works as expected
-          from hub import light_matrix
-          import runloop
-
-          async def main():
-              # write your code here
-              await light_matrix.write("Hello World!")
-
-          runloop.run(main())
-        `));
-
+        show(await board.output);
 
         // this works for any Python code
-        await spike3.write(dedent(`
-          def test():
-              return 1 + 2
+        await board.write(dedent(`
+            import sys
 
-          print(test())
+            print(sys.version)
+            print(sys.implementation._machine)
         `));
 
-        show(await spike3.output);
+        const lines = (await board.output).split(/[\r\n]+/);
+        show(lines.slice(-3).join('\n'));
+
+        // each `write` wait for a result
+        await board.write('help()');
+        // where the output can be read
+        show(await board.output);
 
         // we can close it without errors
-        await spike3.close();
+        await board.close();
 
         // once closed it throws on write and read
         // but the result would be still there
-        console.info('Spike3 active', spike3.active);
+        console.info('Board active', board.active);
 
         // the final line/result remains though
-        const result = await spike3.result;
+        const result = await board.result;
         if (/^\S+?Error: /.test(result))
           console.warn(result);
         else
