@@ -52,6 +52,8 @@
         // where the output can be read
         show(await board.output);
 
+        await board.write('print("bye bye")');
+
         // we can close it without errors
         await board.close();
 

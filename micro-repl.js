@@ -150,6 +150,7 @@ export default async ({
         await writer.write(line + ENTER);
       await writer.write(CONTROL_D);
       await writer.write(eop);
+      await wait.promise;
     },
   };
 };
