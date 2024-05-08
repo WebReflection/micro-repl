@@ -1,12 +1,13 @@
 {
   "name": "micro-repl",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "type": "module",
   "main": "./micro-repl.js",
   "module": "./micro-repl.js",
   "unpkg": "./micro-repl.js",
   "exports": {
-    ".": "./micro-repl.js"
+    ".": "./micro-repl.js",
+    "./x": "./x.js"
   },
   "keywords": [
     "MicroPython",
@@ -16,5 +17,5 @@
   ],
   "author": "Andrea Giammarchi",
   "license": "MIT",
-  "description": "An easy, SerialPort based, MicroPython REPL for micro controllers"
+  "description": "An easy, SerialPort or Xterm.js based, MicroPython REPL for micro controllers"
 }
