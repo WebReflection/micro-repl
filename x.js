@@ -127,6 +127,9 @@ export default async (/** @type {Options} */{
     while (true) {
       const { value, done } = await reader.read();
       if (done) {
+        result.resolve('');
+        reader.releaseLock();
+        break;
       }
       else {
         line += value;
@@ -147,9 +150,9 @@ export default async (/** @type {Options} */{
     }
   };
 
-  const write = async (text) => {
+  const write = async (code) => {
     // normalize lines
-    const lines = text.split(LINE_SEPARATOR);
+    const lines = code.split(LINE_SEPARATOR);
     await writer.write(`${lines.join(ENTER)}${ENTER}`);
     read(lines.at(-1));
   };
@@ -205,8 +208,7 @@ export default async (/** @type {Options} */{
      */
     write: async code => {
       if (!active) error('write');
-      for (const text of code.split(LINE_SEPARATOR))
-        await writer.write(`${text}${ENTER}`);
+      await write(code);
     },
   };
 };
