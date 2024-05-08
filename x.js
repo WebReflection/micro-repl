@@ -1,6 +1,8 @@
+const NESTED = /\r\n\.\.\. +$/;
 const ENTER = '\r\n';
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
+const CONTROL_E = '\x05';
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 
 /**
@@ -25,18 +27,6 @@ const options = {
     if (error) console.error(error);
   },
 };
-
-function withLast(line) {
-  'use strict';
-  switch (true) {
-    case line === `>>> ${this}`:
-    case line === `...     ${this}`:
-    case line === `... ${this}`:
-    case line === this:
-      return true;
-  }
-  return false;
-}
 
 /**
  * @typedef {Object} Options
@@ -148,11 +138,12 @@ export default async (/** @type {Options} */{
     }
   };
 
-  const read = async last => {
-    let line = '';
+  const read = async ({ length }) => {
+    let line = '', buffer = true;
     result = Promise.withResolvers();
     while (true) {
-      const { value, done } = await reader.read();
+      let { value, done } = await reader.read();
+      // console.log({ value, done });
       if (done) {
         result.resolve('');
         reader.releaseLock();
@@ -160,18 +151,22 @@ export default async (/** @type {Options} */{
       }
       else {
         line += value;
-        switch (true) {
-          case line.endsWith(`${ENTER}>>> `):
-          case line.endsWith(`${ENTER}...     `):
-          case line.endsWith(`${ENTER}... `):
-            const lines = line.split(ENTER);
-            const results = [];
-            for (let i = lines.findIndex(withLast, last) + 1; i < lines.length - 1; i++) {
-              results.push(lines[i]);
-              readline.println(lines[i]);
-            }
-            result.resolve(results.join(ENTER));
-            return readline.read(lines.at(-1)).then(write);
+        if (buffer && line.length >= length) {
+          buffer = false;
+          value = line.slice(length);
+        }
+        if (!buffer) {
+          readline.write(value);
+          switch (true) {
+            case line.endsWith(`${ENTER}>>> `):
+            case NESTED.test(line):
+              const lines = line.split(ENTER);
+              const last = lines.at(-1);
+              if (last.endsWith(':')) break;
+              result.resolve(lines.slice(0, -1).join(ENTER));
+              readline.read(last).then(write);
+              return;
+          }
         }
       }
     }
@@ -180,8 +175,18 @@ export default async (/** @type {Options} */{
   const write = async (code) => {
     // normalize lines
     const lines = code.split(LINE_SEPARATOR);
-    await writer.write(`${lines.join(ENTER)}${ENTER}`);
-    read(lines.at(-1));
+    if (lines.length === 1) {
+      code = `${lines[0]}${ENTER}`;
+      await writer.write(code);
+    }
+    else {
+      terminal.write('\x1b[2K\x1b[A'.repeat(lines.length + 1));
+      await writer.write(CONTROL_E);
+      await writer.write(lines.join('\r'));
+      await writer.write(CONTROL_D);
+      code = `paste mode; Ctrl-C to cancel, Ctrl-D to finish${ENTER}`;
+    }
+    read(code);
   };
 
   try {
