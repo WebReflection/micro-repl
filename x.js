@@ -139,7 +139,7 @@ export default async (/** @type {Options} */{
   };
 
   const read = async ({ length }) => {
-    let line = '', buffer = true;
+    let output = '', buffer = true;
     result = Promise.withResolvers();
     while (true) {
       let { value, done } = await reader.read();
@@ -150,17 +150,17 @@ export default async (/** @type {Options} */{
         break;
       }
       else {
-        line += value;
-        if (buffer && line.length >= length) {
+        output += value;
+        if (buffer && output.length >= length) {
           buffer = false;
-          value = line.slice(length);
+          value = output.slice(length);
         }
         if (!buffer) {
           readline.write(value);
           switch (true) {
-            case line.endsWith(`${ENTER}>>> `):
-            case NESTED.test(line):
-              const lines = line.split(ENTER);
+            case output.endsWith(`${ENTER}>>> `):
+            case NESTED.test(output):
+              const lines = output.split(ENTER);
               const last = lines.at(-1);
               if (last.endsWith(':')) break;
               result.resolve(lines.slice(0, -1).join(ENTER));
