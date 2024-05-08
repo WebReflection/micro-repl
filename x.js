@@ -25,6 +25,18 @@ const options = {
   },
 };
 
+function withLast(line) {
+  'use strict';
+  switch (true) {
+    case line === `>>> ${this}`:
+    case line === `...     ${this}`:
+    case line === `... ${this}`:
+    case line === this:
+      return true;
+  }
+  return false;
+}
+
 /**
  * @typedef {Object} Options
  * @prop {Element} target
@@ -124,7 +136,7 @@ export default async (/** @type {Options} */{
           case line.endsWith(`${ENTER}... `):
             const lines = line.split(ENTER);
             const results = [];
-            for (let i = lines.indexOf(last) + 1; i < lines.length - 1; i++) {
+            for (let i = lines.findIndex(withLast, last) + 1; i < lines.length - 1; i++) {
               results.push(lines[i]);
               readline.println(lines[i]);
             }
@@ -136,8 +148,10 @@ export default async (/** @type {Options} */{
   };
 
   const write = async (text) => {
-    await writer.write(`${text}${ENTER}`);
-    read(text);
+    // normalize lines
+    const lines = text.split(LINE_SEPARATOR);
+    await writer.write(`${lines.join(ENTER)}${ENTER}`);
+    read(lines.at(-1));
   };
 
   try {
