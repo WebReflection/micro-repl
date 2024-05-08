@@ -2,8 +2,11 @@
 
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
-  * **[Live JS Demo](https://webreflection.github.io/micro-repl/)** successfully tested on [Spike Prime](https://spike.legoeducation.com/prime/lobby/) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
+  * **[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)**
+  * **[Live JS Demo](https://webreflection.github.io/micro-repl/)**
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the *Spike* 🤯
+
+Each demo has been successfully tested on both [Spike Prime](https://spike.legoeducation.com/prime/lobby/) and [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
 
 - - -
 
@@ -86,6 +89,41 @@ await repl.close();
 
 // check the board status again
 repl.active; // false
+```
+
+## Xterm.js REPL
+
+The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a close to real-world *REPL* solution.
+
+The only difference in its signature to bootstrap is that a `target` *element* is needed to start the terminal.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module">
+    import xtermInit from 'https://esm.run/micro-repl/x';
+
+    connect.onclick = async () => {
+      connect.disabled = true;
+      // bootstrap after user action
+      xtermInit({
+        target: repl,
+        onceClosed(error) {
+          connect.disabled = false;
+          if (error) console.warn(error);
+        }
+      });
+    };
+  </script>
+</head>
+<body>
+  <button id="connect">connect</button>
+  <div id="repl"></div>
+</body>
+</html>
 ```
 
 ### Troubleshooting
