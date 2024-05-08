@@ -1,5 +1,6 @@
 const ENTER = '\r\n';
 const CONTROL_C = '\x03';
+const CONTROL_D = '\x04';
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 
 /**
@@ -116,10 +117,36 @@ export default async (/** @type {Options} */{
   terminal.open(target);
   fitAddon.fit();
   terminal.focus();
+  terminal.attachCustomKeyEventHandler(event => {
+    const { code, composed, ctrlKey, shiftKey } = event;
+    if (active && composed && ctrlKey && !shiftKey && code === 'KeyD') {
+      event.preventDefault();
+      writer.write(CONTROL_D).then(close);
+      return false;
+    }
+    return true;
+  });
 
   let active = true;
   let result = Promise.withResolvers();
   result.resolve('');
+
+  /**
+   * Flag the port as inactive and closes it.
+   * This dance without unknown errors has been brought to you by:
+   * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
+   */
+  const close = async () => {
+    if (active) {
+      active = false;
+      reader.cancel();
+      await readerClosed.catch(Object); // no-op - expected
+      writer.close();
+      await writerClosed;
+      await port.close();
+      onceClosed(null);
+    }
+  };
 
   const read = async last => {
     let line = '';
@@ -184,23 +211,7 @@ export default async (/** @type {Options} */{
       return result.promise.then(() => target.innerText);
     },
 
-    /**
-     * Flag the port as inactive and closes it.
-     * This dance without unknown errors has been brought to you by:
-     * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
-     */
-    close: async () => {
-      if (active) {
-        active = false;
-        reader.cancel();
-        await readerClosed.catch(Object); // no-op - expected
-        writer.close();
-        await writerClosed;
-        await port.close();
-        output = '';
-        onceClosed(null);
-      }
-    },
+    close,
 
     /**
      * Write code to the active port, throws otherwise.

@@ -14,6 +14,7 @@
         target: repl,
         onceClosed(error) {
           connect.disabled = false;
+          repl.replaceChildren();
           if (error) console.warn(error);
         }
       }).then(async board => {
