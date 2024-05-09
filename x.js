@@ -1,4 +1,4 @@
-const NESTED = /\r\n\.\.\. +$/;
+const EOL = /\r\n(?:>>>|\.\.\.) +$/;
 const ENTER = '\r\n';
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
@@ -138,16 +138,20 @@ export default async (/** @type {Options} */{
     }
   };
 
+  // calculate the delay time accordingly with the baudRate
+  // the faster the baudRate the lower is the delay.
+  // 115200 means 60FPS ... 30FPS might be safer though
+  // but it feels weird on the eyes.
+  const delay = (1000 / 60) * 115200 / baudRate;
+
   const read = async ({ length }) => {
     let output = '', buffer = true;
     result = Promise.withResolvers();
-    while (true) {
+    return (async function loop() {
       let { value, done } = await reader.read();
-      // console.log({ value, done });
       if (done) {
         result.resolve('');
         reader.releaseLock();
-        break;
       }
       else {
         output += value;
@@ -157,28 +161,31 @@ export default async (/** @type {Options} */{
         }
         if (!buffer) {
           readline.write(value);
-          switch (true) {
-            case output.endsWith(`${ENTER}>>> `):
-            case NESTED.test(output):
-              const lines = output.split(ENTER);
-              const last = lines.at(-1);
-              if (last.endsWith(':')) break;
-              result.resolve(lines.slice(0, -1).join(ENTER));
-              readline.read(last).then(write);
-              return;
+          if (EOL.test(output)) {
+            const lines = output.split(ENTER);
+            const last = lines.pop();
+            result.resolve(lines.join(ENTER));
+            readline.read(last).then(write);
+            return result.promise;
           }
         }
+        // give the reader a chance to finish reading
+        // up to the next interactive line
+        setTimeout(loop, delay);
       }
-    }
+      return result.promise;
+    })();
   };
 
   const write = async (code) => {
     // normalize lines
     const lines = code.split(LINE_SEPARATOR);
+    // single line input
     if (lines.length === 1) {
       code = `${lines[0]}${ENTER}`;
       await writer.write(code);
     }
+    // multi line input: switch to paste mode
     else {
       terminal.write('\x1b[2K\x1b[A'.repeat(lines.length + 1));
       await writer.write(CONTROL_E);
@@ -186,7 +193,7 @@ export default async (/** @type {Options} */{
       await writer.write(CONTROL_D);
       code = `paste mode; Ctrl-C to cancel, Ctrl-D to finish${ENTER}`;
     }
-    read(code);
+    return read(code);
   };
 
   try {
@@ -224,7 +231,7 @@ export default async (/** @type {Options} */{
      */
     write: async code => {
       if (!active) error('write');
-      await write(code);
+      return await write(code);
     },
   };
 };
