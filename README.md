@@ -12,6 +12,24 @@ Each demo has been successfully tested on both [Spike Prime](https://spike.legoe
 
 - - -
 
+## Features
+
+There is a super *write and wait* core exported as `micro-repl` module and a full *REPL* mode exported as `micro-repl/x`.
+
+The difference in offered features is the following one:
+
+  * **micro-repl** provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations!
+  * **micro-repl/x** instead offers a full *REPL* ability through *Xterm.js*:
+    * board `name` showed as soon as connected
+    * fully interactive *REPL* mode out of the box
+    * every *Control+X* combination just works
+    * pasting code also works
+    * stopping running code via *Control+C* also works
+    * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
+    * `onData(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
+    * *AutoFit* and *WebLinks* plugins available out of the box
+    * all imports are dynamic so it's size is still minimal before its usage
+
 ## How To / Documentation
 
 The easiest way to use this module is via *CDN*:
@@ -19,6 +37,8 @@ The easiest way to use this module is via *CDN*:
 ```html
 <script type="module">
   import init from 'https://esm.run/micro-repl';
+  // or ...
+  // import init from 'https://esm.run/micro-repl/x';
 
   // to connect a board a user action/gesture is needed
   document.getElementById('repl').onclick = async event => {
@@ -41,7 +61,7 @@ The easiest way to use this module is via *CDN*:
 </script>
 ```
 
-#### TypeScript signaturehttps://github.com/gabrielsessions/pyrepl-js
+#### micro-repl TS signature
 
 Once a `repl` has been successfully initialized, it offers this *API*:
 
@@ -95,11 +115,13 @@ repl.active; // false
 
 ## Xterm.js REPL
 
-The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a close to real-world *REPL* solution.
+The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a real-world *REPL* solution.
 
 The main difference in its signature is that, due *Xterm.js* orchestration, there is no `result` and the `output` simply returns the content of the terminal.
 
 There is the `terminal` instance exposed though, and the options on `init` accept an `onData(buffer:Uint8Array)` callback too.
+
+#### micro-repl/x TS signature
 
 ```ts
 // The default export TS signature
@@ -118,7 +140,7 @@ There is the `terminal` instance exposed though, and the options on `init` accep
 }>
 ```
 
-### Xterm.js Example
+### micro-repl/x Example
 
 ```html
 <!DOCTYPE html>
