@@ -22,6 +22,7 @@ The difference in offered features is the following one:
   * **micro-repl/x** instead offers a full *REPL* ability through *Xterm.js*:
     * board `name` showed as soon as connected
     * fully interactive *REPL* mode out of the box
+    * tab completion works out of the box too
     * every *Control+X* combination just works
     * pasting code also works
     * stopping running code via *Control+C* also works
