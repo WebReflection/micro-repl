@@ -1,4 +1,5 @@
 const CONTROL_C = '\x03';
+const CONTROL_D = '\x04';
 const ENTER = '\r\n';
 const MACHINE = `import sys;print(sys.implementation._machine)${ENTER}`;
 
@@ -73,7 +74,7 @@ export default async (/** @type {Options} */{
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate });
-    port.ondisconnect = () => onceClosed(0);
+    port.ondisconnect = onceClosed;
   }
   catch (error) {
     onceClosed(error);
@@ -140,23 +141,6 @@ export default async (/** @type {Options} */{
   const aborter = new AbortController;
   const readerClosed = port.readable.pipeTo(writable, aborter);
 
-  /**
-   * Flag the port as inactive and closes it.
-   * This dance without unknown errors has been brought to you by:
-   * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
-   */
-  const close = async () => {
-    if (active) {
-      active = false;
-      aborter.abort();
-      writer.close();
-      await writerClosed;
-      await readerClosed.catch(Object); // no-op - expected
-      await port.close();
-      onceClosed(null);
-    }
-  };
-
   let pastMode = false;
   terminal.attachCustomKeyEventHandler(event => {
     const { type, code, composed, ctrlKey, shiftKey } = event;
@@ -168,8 +152,19 @@ export default async (/** @type {Options} */{
           pastMode = true;
         else if (code === 'KeyD') {
           event.preventDefault();
-          if (confirm('Reboot?'))
-            setTimeout(close, 1000);
+          writer.write(CONTROL_D);
+          // this is needed to boards losing the REPL mode
+          // the SPIKE Prime takes ~ 1.5s to boot but it could be
+          // interactive before that ... other boards might never
+          // need this, hence the RegExp check.
+          (async function hardReboot() {
+            await new Promise(res => setTimeout(res, 1500));
+            if (/\n $/.test(target.innerText)) {
+              writer.write(CONTROL_C);
+              await hardReboot();
+            }
+          })();
+          return false;
         }
       }
     }
@@ -212,7 +207,22 @@ export default async (/** @type {Options} */{
       return target.innerText;
     },
 
-    close,
+    /**
+     * Flag the port as inactive and closes it.
+     * This dance without unknown errors has been brought to you by:
+     * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
+     */
+    close: async () => {
+      if (active) {
+        active = false;
+        aborter.abort();
+        writer.close();
+        await writerClosed;
+        await readerClosed.catch(Object); // no-op - expected
+        await port.close();
+        onceClosed(null);
+      }
+    },
 
     /**
      * Write code to the active port, throws otherwise.

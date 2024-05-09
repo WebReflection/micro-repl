@@ -14,9 +14,9 @@
       connect.disabled = true;
       init({
         target: repl,
-        onData(buffer) {
-          console.log(decoder.decode(buffer));
-        },
+        // onData(buffer) {
+        //   console.log(decoder.decode(buffer));
+        // },
         onceClosed(error) {
           connect.disabled = false;
           repl.replaceChildren();
