@@ -1,4 +1,5 @@
 const CONTROL_C = '\x03';
+const CONTROL_D = '\x04';
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -71,6 +72,7 @@ export default async (/** @type {Options} */{
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate });
+    port.ondisconnect = () => onceClosed(0);
   }
   catch (error) {
     onceClosed(error);
@@ -98,16 +100,42 @@ export default async (/** @type {Options} */{
   const writer = encoder.writable.getWriter();
 
   // forward the reader
-  const readerClosed = port.readable.pipeTo(
-    new WritableStream({
-      write: createWriter({
-        write(chunk) {
-          onData(chunk);
-          return terminal.write(chunk);
-        }
-      })
+  const writable = new WritableStream({
+    write: createWriter({
+      write(chunk) {
+        onData(chunk);
+        return terminal.write(chunk);
+      }
     })
-  );
+  });
+
+  const aborter = new AbortController;
+  const readerClosed = port.readable.pipeTo(writable, aborter);
+
+  /**
+   * Flag the port as inactive and closes it.
+   * This dance without unknown errors has been brought to you by:
+   * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
+   */
+  const close = async () => {
+    if (active) {
+      active = false;
+      aborter.abort();
+      writer.close();
+      await writerClosed;
+      await readerClosed.catch(Object); // no-op - expected
+      await port.close();
+      onceClosed(null);
+    }
+  };
+
+  terminal.attachCustomKeyEventHandler(event => {
+    const { code, composed, ctrlKey, shiftKey } = event;
+    if (active && composed && ctrlKey && !shiftKey && code === 'KeyD') {
+      setTimeout(close, 1000);
+    }
+    return true;
+  });
 
   terminal.onData(createWriter(writer));
 
@@ -141,21 +169,7 @@ export default async (/** @type {Options} */{
       return target.innerText;
     },
 
-    /**
-     * Flag the port as inactive and closes it.
-     * This dance without unknown errors has been brought to you by:
-     * https://stackoverflow.com/questions/71262432/how-can-i-close-a-web-serial-port-that-ive-piped-through-a-transformstream
-     */
-    close: async () => {
-      if (active) {
-        active = false;
-        writer.close();
-        await readerClosed.catch(Object); // no-op - expected
-        await writerClosed;
-        await port.close();
-        onceClosed(null);
-      }
-    },
+    close,
 
     /**
      * Write code to the active port, throws otherwise.
