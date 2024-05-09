@@ -1,5 +1,7 @@
 # micro-repl
 
+<sup>**Social Media Photo by [Luca J](https://unsplash.com/@lucajns) on [Unsplash](https://unsplash.com/)**</sup>
+
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
   * **[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)**
