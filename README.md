@@ -95,7 +95,9 @@ repl.active; // false
 
 The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a close to real-world *REPL* solution.
 
-The only difference in its signature to bootstrap is that a `target` *element* is needed to start the terminal.
+The main difference in its signature is that, due *Xterm.js* orchestration, there is no `result` and the `output` simply returns the content of the terminal.
+
+There is the `terminal` instance exposed though, and the options on `init` accept an `onData(buffer:Uint8Array)` callback too.
 
 ```html
 <!DOCTYPE html>
@@ -106,11 +108,16 @@ The only difference in its signature to bootstrap is that a `target` *element* i
   <script type="module">
     import xtermInit from 'https://esm.run/micro-repl/x';
 
+    const decoder = new TextDecoder;
+
     connect.onclick = async () => {
       connect.disabled = true;
       // bootstrap after user action
       xtermInit({
         target: repl,
+        onData(buffer) {
+          console.log(decoder.decode(buffer));
+        },
         onceClosed(error) {
           connect.disabled = false;
           if (error) console.warn(error);

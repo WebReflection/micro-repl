@@ -15,6 +15,11 @@ const error = action => {
 const options = {
   baudRate: 115200,
   /**
+   * Invoked each time the terminal receives data as buffer.
+   * @param {Uint8Array} buffer
+   */
+  onData(buffer) {},
+  /**
    * Invoked once the repl has been closed or an
    * error occurred. In the former case `error` is `null`,
    * in every other case the `error` is what the REPL produced.
@@ -29,12 +34,14 @@ const options = {
  * @typedef {Object} Options
  * @prop {Element} target
  * @prop {number} [baudRate=115200]
+ * @prop {(buffer:Uint8Array) => void} [onData]
  * @prop {(error?:Error) => void} [onceClosed]
  */
 
 export default async (/** @type {Options} */{
   target,
   baudRate = options.baudRate,
+  onData = options.onData,
   onceClosed = options.onceClosed,
 } = options) => {
   if (!(target instanceof Element))
@@ -93,7 +100,12 @@ export default async (/** @type {Options} */{
   // forward the reader
   const readerClosed = port.readable.pipeTo(
     new WritableStream({
-      write: createWriter(terminal)
+      write: createWriter({
+        write(chunk) {
+          onData(chunk);
+          return terminal.write(chunk);
+        }
+      })
     })
   );
 
