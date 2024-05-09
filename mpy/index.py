@@ -1,48 +1,39 @@
-from pyscript import document, window
+from pyscript import document
 
-from pyscript.ffi import to_js
 from pyscript.js_modules.dedent import default as dedent
 from pyscript.js_modules.micro_repl import default as init
 
-connect, output, = document.querySelectorAll("#connect, #output")
+active = False
+board = None
+connect, toggle, = document.querySelectorAll("#connect, #toggle")
 
-def once_closed(error):
-    connect.disabled = False
-    if (error):
-        window.console.warn(error)
-
-def show(content):
-    code = document.createElement("code")
-    code.textContent = content
-    output.append(code)
+async def ontoggle(e):
+    global active, board
+    active = not active
+    if active:
+        R = 255
+        G = 255
+        B = 255
+    else:
+        R = 0
+        G = 0
+        B = 0
+    await board.write(dedent(f"""
+        pixel[0] = ({R},{G},{B})
+        pixel.write()
+    """))
 
 async def onclick(event):
+    global board
     connect.disabled = True
-    output.replaceChildren()
-    spike3 = await init(to_js({ "onceClosed": once_closed }))
-    print('Spike3 active', spike3.active)
-    show(await spike3.output)
-    await spike3.write('help()')
-    show(await spike3.output)
-    await spike3.write(dedent("""
-        from hub import light_matrix
-        import runloop
-
-        async def main():
-            await light_matrix.write("Hello World!")
-
-        runloop.run(main())
+    board = await init()
+    toggle.disabled = False
+    toggle.onclick = ontoggle
+    print('Board active', board.active)
+    await board.write(dedent("""
+        import machine, neopixel
+        pixel_pin = 16
+        pixel = neopixel.NeoPixel(machine.Pin(pixel_pin), 1)
     """))
-    await spike3.write(dedent("""
-        def test():
-            return 1 + 2
-
-        print(test())
-    """))
-    show(await spike3.output)
-    await spike3.close()
-    print('Spike3 active', spike3.active)
-    result = await spike3.result
-    print('last result', result)
 
 connect.onclick = onclick

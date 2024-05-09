@@ -28,51 +28,29 @@
         }
       }).then(async board => {
         globalThis.board = board;
-
-        // there is an active state
-        console.info('Board active', board.active);
-
-        // once initialized, the REPL welcome message can be
-        // fully ignored or showed
-        show(await board.output);
-
-        // this works for any Python code
+        toggle.disabled = false;
         await board.write(dedent(`
-            import sys
-
-            print(sys.version)
-            print(sys.implementation._machine)
+            import machine, neopixel
+            pixel_pin = 16
+            pixel = neopixel.NeoPixel(machine.Pin(pixel_pin), 1)
         `));
-
-        const lines = (await board.output).split(/[\r\n]+/);
-        show(lines.slice(-3).join('\n'));
-
-        // each `write` wait for a result
-        await board.write('help()');
-        // where the output can be read
-        show(await board.output);
-
-        await board.write('print("bye bye")');
-
-        // we can close it without errors
-        await board.close();
-
-        // once closed it throws on write and read
-        // but the result would be still there
-        console.info('Board active', board.active);
-
-        // the final line/result remains though
-        const result = await board.result;
-        if (/^\S+?Error: /.test(result))
-          console.warn(result);
-        else
-          console.info('last result', result);
       });
     };
+
+    let active = false;
+    toggle.onclick = () => {
+        active = !active;
+        board.write(dedent(`
+            pixel[0] = (${active ? '255, 255, 255' : '0, 0, 0'})
+            pixel.write()
+        `));
+    };
+
   </script>
 </head>
 <body>
   <button id="connect">connect</button>
+  <button id="toggle" disabled>LED toggle</button>
   <pre id="output"></pre>
 </body>
 </html>
