@@ -99,6 +99,25 @@ The main difference in its signature is that, due *Xterm.js* orchestration, ther
 
 There is the `terminal` instance exposed though, and the options on `init` accept an `onData(buffer:Uint8Array)` callback too.
 
+```ts
+// The default export TS signature
+({ target, baudRate, onData, onceClosed, }?: {
+    target: Element; // where to show the terminal
+    baudRate: number; // default: 115200
+    onData(buffer:Uint8Array): void;
+    onceClosed(error: Error | null): void;
+}) => Promise<{
+    readonly name: string;
+    readonly active: boolean;
+    readonly terminal: Terminal;
+    readonly output: string;
+    write: (code: string) => Promise<...>;
+    close: () => Promise<...>;
+}>
+```
+
+### Xterm.js Example
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -113,7 +132,7 @@ There is the `terminal` instance exposed though, and the options on `init` accep
     connect.onclick = async () => {
       connect.disabled = true;
       // bootstrap after user action
-      xtermInit({
+      const board = await xtermInit({
         target: repl,
         onData(buffer) {
           console.log(decoder.decode(buffer));
@@ -123,6 +142,9 @@ There is the `terminal` instance exposed though, and the options on `init` accep
           if (error) console.warn(error);
         }
       });
+
+      // prints out the board name
+      console.log(board.name);
     };
   </script>
 </head>

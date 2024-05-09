@@ -1,5 +1,6 @@
 const CONTROL_C = '\x03';
-const CONTROL_D = '\x04';
+const ENTER = '\r\n';
+const MACHINE = `import sys;print(sys.implementation._machine)${ENTER}`;
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -99,12 +100,39 @@ export default async (/** @type {Options} */{
   const writerClosed = encoder.readable.pipeTo(port.writable);
   const writer = encoder.writable.getWriter();
 
+  const decoder = new TextDecoder;
+
+  const machine = Promise.withResolvers();
+  let waitForMachine = true;
+  let accMachine = '';
+
   // forward the reader
   const writable = new WritableStream({
     write: createWriter({
       write(chunk) {
-        onData(chunk);
-        return terminal.write(chunk);
+        if (waitForMachine) {
+          const text = decoder.decode(chunk);
+          if (accMachine === '' && text.startsWith(ENTER))
+            chunk = new Uint8Array(chunk.slice(ENTER.length));
+          accMachine += text;
+          const i = accMachine.indexOf(MACHINE);
+          if (-1 < i) {
+            const gotIt = accMachine.slice(i + MACHINE.length).split(ENTER);
+            if (gotIt.length === 2) {
+              waitForMachine = false;
+              accMachine = '.';
+              machine.resolve(gotIt[0]);
+            }
+          }
+        }
+        else onData(chunk);
+        terminal.write(chunk);
+        if (accMachine === '.') {
+          accMachine = '';
+          terminal.write('\x1b[A'.repeat(2));
+          terminal.write('\x1b[2K'.repeat(2));
+          terminal.write('\x1b[B'.repeat(2));
+        }
       }
     })
   });
@@ -129,10 +157,21 @@ export default async (/** @type {Options} */{
     }
   };
 
+  let pastMode = false;
   terminal.attachCustomKeyEventHandler(event => {
-    const { code, composed, ctrlKey, shiftKey } = event;
-    if (active && composed && ctrlKey && !shiftKey && code === 'KeyD') {
-      setTimeout(close, 1000);
+    const { type, code, composed, ctrlKey, shiftKey } = event;
+    if (type === 'keydown' && composed && ctrlKey && !shiftKey) {
+      if (pastMode)
+        pastMode = code !== 'KeyD';
+      else {
+        if (code === 'KeyE')
+          pastMode = true;
+        else if (code === 'KeyD') {
+          event.preventDefault();
+          if (confirm('Reboot?'))
+            setTimeout(close, 1000);
+        }
+      }
     }
     return true;
   });
@@ -150,20 +189,24 @@ export default async (/** @type {Options} */{
 
   try {
     await writer.write(CONTROL_C);
+    await writer.write(MACHINE);
   }
   catch (error) {
     onceClosed(error);
     throw error;
   }
 
-  return {
+  return machine.promise.then(name => ({
+    /** @type {string} */
+    get name() { return name },
+
     /** @type {Terminal} */
     get terminal() { return terminal },
 
     /** @type {boolean} */
     get active() { return active; },
 
-    /** @type {Promise<string>} */
+    /** @type {string} */
     get output() {
       if (!active) error('read');
       return target.innerText;
@@ -179,5 +222,5 @@ export default async (/** @type {Options} */{
       if (!active) error('write');
       await writer.write(code);
     },
-  };
+  }));
 };
