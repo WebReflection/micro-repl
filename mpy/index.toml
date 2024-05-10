@@ -1,2 +1,2 @@
 [js_modules.main]
-"../board.js" = "micro_repl"
+"https://esm.run/micro-repl/board" = "micro_repl"
