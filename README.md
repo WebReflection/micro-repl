@@ -87,7 +87,7 @@ type MicroREPLOptions = {
 
 #### board
 
-A *board* can be created via `new Board(options)` or just `new Board(options)` ( <sup>which is more Pythonic</sup> ) and its returned reference is always an `instanceof Board`.
+A *board* can be created via `new Board(options)` or just direct `Board(options)` ( <sup>which is more Pythonic</sup> ) and its returned reference is always an `instanceof Board`.
 
 ```ts
 type MicroREPLBoard = {
