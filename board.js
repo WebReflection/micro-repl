@@ -43,10 +43,10 @@ const reason = action => new Error(`Unable to ${action} when disconnected`);
 
 /**
  * @typedef {Object} MicroREPLOptions
- * @prop {number} [baudRate] defaults to 115200
+ * @prop {number} [baudRate=115200]
  * @prop {() => void} [onconnect]
  * @prop {() => void} [ondisconnect]
- * @prop {(error:Error) => void} [onerror]
+ * @prop {(error:Error) => void} [onerror=console.error]
  * @prop {(buffer:Uint8Array) => void} [ondata]
  */
 

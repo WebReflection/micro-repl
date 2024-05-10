@@ -4,6 +4,7 @@
 
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
+  * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
   * **[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)**
   * **[Live JS Demo](https://webreflection.github.io/micro-repl/)**
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the *Spike* 🤯
@@ -18,8 +19,8 @@ There is a super *write and wait* core exported as `micro-repl` module and a ful
 
 The difference in offered features is the following one:
 
-  * **micro-repl** provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations!
-  * **micro-repl/x** instead offers a full *REPL* ability through *Xterm.js*:
+  * **micro-repl** provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations. **Note**: this initial *way-too-little* idea might be removed in the future!
+  * **micro-repl/board** instead offers a full *REPL* ability through *Xterm.js*:
     * board `name` showed as soon as connected
     * fully interactive *REPL* mode out of the box
     * tab completion works out of the box too
@@ -27,40 +28,100 @@ The difference in offered features is the following one:
     * pasting code also works
     * stopping running code via *Control+C* also works
     * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
-    * `onData(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
+    * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
     * *AutoFit* and *WebLinks* plugins available out of the box
     * all imports are dynamic so it's size is still minimal before its usage
 
+Please **note** `micro-repl/board` might become the main default export of this project.
+
 ## How To / Documentation
 
-The easiest way to use this module is via *CDN*:
+The easiest way to use `micro-repl/board` is via *CDN*:
 
 ```html
 <script type="module">
-  import init from 'https://esm.run/micro-repl';
-  // or ...
-  // import init from 'https://esm.run/micro-repl/x';
+  import Board from 'https://esm.run/micro-repl/board';
+
+  const board = new Board({
+    // all optionals
+    baudRate: 9600, // defaults to 115200
+    onconnect() { console.info('connected') },
+    ondisconnect() { console.warn('disconnected') }
+    onerror(error) { console.error(error) },
+    ondata(buffer) { }
+  });
 
   // to connect a board a user action/gesture is needed
   document.getElementById('repl').onclick = async event => {
     event.preventDefault();
 
-    // create a `repl` that can execute code and read its outcome.
-    const repl = await init({
-      // the optional desired board baudRate
-      // it's 115200 by default.
-      baudRate: 115200,
-
-      // the optional callback invoked when either
-      // the `repl` has been closed or an error occurred.
-      onceClosed(error) {
-        // by default it logs the error in devtools
-        if (error) console.error(error);
-      },
-    });
+    // connect the board to a DOM element to show the terminal
+    await board.connect(event.target);
   };
 </script>
+<div id="repl"></div>
 ```
+
+### micr-repl/board TS signature
+
+Documented via JSDoc TS, these are all explicit TS details around this module's API.
+
+#### options
+
+These are all optional fields that can be passed when creating a new *Board*.
+
+```ts
+type MicroREPLOptions = {
+  // default: 115200
+  baudRate?: number | undefined;
+  // default: console.error
+  onerror?: ((error: Error) => void) | undefined;
+  // default: () => void - notifies when the board is connected
+  onconnect?: (() => void) | undefined;
+  // default: () => void - notifies when the board is disconnected/lost
+  ondisconnect?: (() => void) | undefined;
+  // default: () => void - receives all data from the terminal
+  ondata?: ((buffer: Uint8Array) => void) | undefined;
+}
+```
+
+#### board
+
+A *board* can be created via `new Board(options)` or just `new Board(options)` ( <sup>which is more Pythonic</sup> ) and its returned reference is always an `instanceof Board`.
+
+```ts
+type MicroREPLBoard = {
+  // `true` when connected, `false` otherwise
+  @readonly connected: boolean;
+  // the passed `baudRate` option
+  @readonly baudRate: number;
+  // the connected board name
+  @readonly name: string;
+  // the Terminal reference once connected
+  @readonly terminal: xterm.Terminal;
+  // ⚠️ must be done on user action !!!
+  // connects the board and show the REPL in the specified `target`
+  connect: (target: Element) => Promise<MicroREPLBoard | void>;
+  // disconnect the board and invoke ondisconnect
+  disconnect: () => Promise<void>;
+  // soft-reset the board and put it back into REPL mode
+  reset: () => Promise<void>;
+  // write any string directly to the board
+  write: (code: string) => Promise<void>;
+}
+```
+
+Please note that `board.write(code)` requires `\r\n` at the end if you want your code to be executed.
+
+Please also note this is not the same as `board.terminal.write(...)` because the terminal depends on writes on the board, not vice-versa.
+
+- - -
+
+<sup><sub>**WARNING**</sub></sup>
+
+Please note this module is experimental. The current exports might change if actually the *board* is the best option this module offers (and I am definitively leading toward this conclusion).
+
+- - -
 
 #### micro-repl TS signature
 
