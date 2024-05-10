@@ -228,17 +228,18 @@ export default function Board({
       }
     },
 
-    reset: async () => {
+    reset: async (delay = 500) => {
       if (port) {
         await writer.write(CONTROL_D);
-        // for boards losing the REPL mode on soft-reset
         while (port) {
-          await new Promise(res => setTimeout(res, 1500));
+          await new Promise(res => setTimeout(res, delay));
+          // for boards losing the REPL mode on soft-reset
           if (port && /\n $/.test(element.innerText))
             await writer.write(CONTROL_C);
           else
             break;
         }
+        terminal.focus();
       }
       else onerror(reason('reset'));
     },

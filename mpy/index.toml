@@ -1,3 +1,2 @@
 [js_modules.main]
-"https://cdn.jsdelivr.net/npm/codedent/es.js" = "dedent"
-"https://esm.run/micro-repl" = "micro_repl"
+"../board.js" = "micro_repl"

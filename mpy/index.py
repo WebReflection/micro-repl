@@ -1,48 +1,37 @@
 from pyscript import document, window
 
 from pyscript.ffi import to_js
-from pyscript.js_modules.dedent import default as dedent
-from pyscript.js_modules.micro_repl import default as init
+from pyscript.js_modules.micro_repl import default as Board
 
-connect, output, = document.querySelectorAll("#connect, #output")
-
-def once_closed(error):
-    connect.disabled = False
-    if (error):
-        window.console.warn(error)
-
-def show(content):
-    code = document.createElement("code")
-    code.textContent = content
-    output.append(code)
-
-async def onclick(event):
+def on_connect():
+    print("connected")
     connect.disabled = True
-    output.replaceChildren()
-    spike3 = await init(to_js({ "onceClosed": once_closed }))
-    print('Spike3 active', spike3.active)
-    show(await spike3.output)
-    await spike3.write('help()')
-    show(await spike3.output)
-    await spike3.write(dedent("""
-        from hub import light_matrix
-        import runloop
+    reset.disabled = False
 
-        async def main():
-            await light_matrix.write("Hello World!")
+def on_disconnect():
+    print("disconnected")
+    connect.disabled = False
+    reset.disabled = True
 
-        runloop.run(main())
-    """))
-    await spike3.write(dedent("""
-        def test():
-            return 1 + 2
+def on_error(error):
+    window.console.warn(error)
 
-        print(test())
-    """))
-    show(await spike3.output)
-    await spike3.close()
-    print('Spike3 active', spike3.active)
-    result = await spike3.result
-    print('last result', result)
+async def on_reset(error):
+    reset.disabled = True
+    await board.reset()
+    reset.disabled = False
 
-connect.onclick = onclick
+async def on_click(event):
+    await board.connect(output)
+    window.board = board
+
+board = Board(to_js({
+    "onconnect": on_connect,
+    "ondisconnect": on_disconnect,
+    "onerror": on_error,
+}))
+
+connect, reset, output, = document.querySelectorAll("#connect, #reset, #output")
+
+connect.onclick = on_click
+reset.onclick = on_reset
