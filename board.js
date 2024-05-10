@@ -203,6 +203,7 @@ export default function Board({
         return board;
       }
       catch (error) {
+        port = null;
         onerror(error);
       }
     },
