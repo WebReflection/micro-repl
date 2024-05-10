@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Micro REPL Board</title>
+  <link rel="stylesheet" href="../css/index.css">
+  <script type="module">
+    import Board from '../board.js';
+
+    // enable/disable the connect button
+    const toggle = disabled => {
+      connect.disabled = disabled;
+    };
+
+    let decoder;
+    const board = Board({
+      onconnect() {
+        console.log('connected');
+      },
+      ondisconnect() {
+        toggle(false);
+        console.log('disconnected');
+      },
+      onerror(error) {
+        toggle(false);
+        console.warn(error);
+      },
+      ondata(buffer) {
+        if (!decoder) decoder = new TextDecoder;
+        // console.log(decoder.decode(buffer));
+      }
+    });
+
+    // connect on user action
+    connect.onclick = async () => {
+      toggle(true);
+      await board.connect(repl);
+    };
+
+    // for debugging purpose
+    globalThis.board = board;
+
+  </script>
+</head>
+<body>
+  <button id="connect">connect</button>
+  <div id="repl"></div>
+</body>
+</html>
