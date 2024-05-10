@@ -1,3 +1,6 @@
+board/
 css/
 mpy/
+xterm/
 index.html
+update.cjs
