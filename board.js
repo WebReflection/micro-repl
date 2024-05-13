@@ -211,7 +211,9 @@ export default function Board({
               event.preventDefault();
               navigator.clipboard.readText().then(async text => {
                 for (const line of text.split(LINE_SEPARATOR)) {
-                  await writer.write(`${line}\r`);
+                  // sanitize left-overs in code strings and comments
+                  // such as \n or \r in strings
+                  await writer.write(`${line.replace(/\\/g, '\\\\')}\r`);
                   const { promise, resolve } = Promise.withResolvers();
                   setTimeout(resolve, 10);
                   await promise;
