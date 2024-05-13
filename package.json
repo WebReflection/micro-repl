@@ -1,6 +1,6 @@
 {
   "name": "micro-repl",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "type": "module",
   "main": "./micro-repl.js",
   "module": "./micro-repl.js",
