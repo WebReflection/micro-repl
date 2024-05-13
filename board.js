@@ -1,6 +1,7 @@
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
 const ENTER = '\r\n';
+const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 const MACHINE = `import sys;print(sys.implementation._machine)${ENTER}`;
 
 // Xterm.js dependencies via CDN
@@ -191,17 +192,32 @@ export default function Board({
         let pastMode = false;
         terminal.attachCustomKeyEventHandler(event => {
           const { type, code, composed, ctrlKey, shiftKey } = event;
-          if (type === 'keydown' && composed && ctrlKey && !shiftKey) {
-            if (pastMode)
-              pastMode = code !== 'KeyD';
-            else {
-              if (code === 'KeyE')
-                pastMode = true;
-              else if (code === 'KeyD') {
-                event.preventDefault();
-                board.reset();
-                return false;
+          if (type === 'keydown') {
+            if (composed && ctrlKey && !shiftKey) {
+              if (pastMode)
+                pastMode = code !== 'KeyD';
+              else {
+                if (code === 'KeyE')
+                  pastMode = true;
+                else if (code === 'KeyD') {
+                  event.preventDefault();
+                  board.reset();
+                  return false;
+                }
               }
+            }
+            // prevent errors with huge content passed in paste mode
+            else if (pastMode && composed && ctrlKey && shiftKey && code === 'KeyV') {
+              event.preventDefault();
+              navigator.clipboard.readText().then(async text => {
+                for (const line of text.split(LINE_SEPARATOR)) {
+                  await writer.write(`${line}\r`);
+                  const { promise, resolve } = Promise.withResolvers();
+                  setTimeout(resolve, 10);
+                  await promise;
+                }
+              });
+              return false;
             }
           }
           return true;
