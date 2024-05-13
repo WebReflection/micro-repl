@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Micro REPL Board</title>
   <link rel="stylesheet" href="../css/index.css">
+  <style>
+    #repl {
+      background: #FFFFFF;
+      color: #000000;
+    }
+  </style>
   <script type="module">
     import Board from '../board.js';
 
@@ -29,7 +35,11 @@
       ondata(buffer) {
         if (!decoder) decoder = new TextDecoder;
         // console.log(decoder.decode(buffer));
-      }
+      },
+      // theme: {
+      //   background: 'infer',
+      //   foreground: 'infer',
+      // },
     });
 
     // connect on user action

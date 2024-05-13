@@ -42,12 +42,26 @@ const noop = () => {};
 const reason = action => new Error(`Unable to ${action} when disconnected`);
 
 /**
+ * Return a specific value or infer it from the live element.
+ * @param {Element} target
+ * @param {string} value
+ * @param {string} property
+ * @returns {string}
+ */
+const style = (target, value, property) => (
+  value === 'infer' ?
+    getComputedStyle(target).getPropertyValue(property) :
+    value
+);
+
+/**
  * @typedef {Object} MicroREPLOptions
  * @prop {number} [baudRate=115200]
  * @prop {() => void} [onconnect]
  * @prop {() => void} [ondisconnect]
  * @prop {(error:Error) => void} [onerror=console.error]
  * @prop {(buffer:Uint8Array) => void} [ondata]
+ * @prop {{ background:string, foreground:string }} [theme]
  */
 
 /** @type {MicroREPLOptions} */
@@ -57,6 +71,10 @@ const options = {
   ondisconnect: noop,
   onerror: console.error,
   ondata: noop,
+  theme: {
+    background: "#191A19",
+    foreground: "#F5F2E7",
+  }
 };
 
 /**
@@ -81,6 +99,7 @@ export default function Board({
   ondisconnect = options.ondisconnect,
   onerror = options.onerror,
   ondata = options.ondata,
+  theme = options.theme,
 } = options) {
   let port = null;
   let terminal = null;
@@ -111,13 +130,17 @@ export default function Board({
           { WebLinksAddon },
         ] = await Promise.all(libs.concat(port.open({ baudRate })));
 
+        const { background, foreground } = theme;
+        const color = style(target, foreground, 'color');
+
         terminal = new Terminal({
-            cursorBlink: true,
-            cursorStyle: "block",
-            theme: {
-                background: "#191A19",
-                foreground: "#F5F2E7",
-            },
+          cursorBlink: true,
+          cursorStyle: "block",
+          theme: {
+            color,
+            background,
+            foreground: color,
+          },
         });
 
         const encoder = new TextEncoderStream;

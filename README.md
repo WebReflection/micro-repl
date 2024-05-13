@@ -82,6 +82,14 @@ type MicroREPLOptions = {
   ondisconnect?: (() => void) | undefined;
   // default: () => void - receives all data from the terminal
   ondata?: ((buffer: Uint8Array) => void) | undefined;
+  // allow terminal easy-theme setup - if values are "infer"
+  // these are retrieved via computed style / CSS values
+  // for background (or background-color) and color (as foreground)
+  // default: { background: "#191A19", foreground: "#F5F2E7" }
+  theme?: {
+        background: string;
+        foreground: string;
+    } | undefined;
 }
 ```
 
@@ -92,13 +100,13 @@ A *board* can be created via `new Board(options)` or just direct `Board(options)
 ```ts
 type MicroREPLBoard = {
   // `true` when connected, `false` otherwise
-  @readonly connected: boolean;
+  readonly connected: boolean;
   // the passed `baudRate` option
-  @readonly baudRate: number;
+  readonly baudRate: number;
   // the connected board name
-  @readonly name: string;
+  readonly name: string;
   // the Terminal reference once connected
-  @readonly terminal: xterm.Terminal;
+  readonly terminal: xterm.Terminal;
   // ⚠️ must be done on user action !!!
   // connects the board and show the REPL in the specified `target`
   connect: (target: Element) => Promise<MicroREPLBoard | void>;
