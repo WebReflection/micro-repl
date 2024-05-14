@@ -5,11 +5,11 @@
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
   * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
-  * **[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)**
-  * **[Live JS Demo](https://webreflection.github.io/micro-repl/)**
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the *Spike* 🤯
+  * ~~[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)~~
+  * ~~[Live JS Demo](https://webreflection.github.io/micro-repl/)~~
 
-Each demo has been successfully tested on both [Spike Prime](https://spike.legoeducation.com/prime/lobby/) and [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
+Each demo has been successfully tested on both [Spike Prime](https://spike.legoeducation.com/prime/lobby/), [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) and [Adafruit PyPortal - CircuitPython](https://www.adafruit.com/product/4116) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
 
 - - -
 
