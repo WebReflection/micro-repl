@@ -2,7 +2,12 @@ const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
 const ENTER = '\r\n';
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
-const MACHINE = `import sys;print(sys.implementation._machine)${ENTER}`;
+const MACHINE = [
+  'from sys import implementation as _',
+  'print(hasattr(_, "_machine") and _._machine or _.name)',
+  'del _',
+  ENTER,
+].join(';');
 
 // Xterm.js dependencies via CDN
 const CDN = 'https://cdn.jsdelivr.net/npm';
