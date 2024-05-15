@@ -5,7 +5,7 @@
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
   * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
-  * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the *Spike* 🤯
+  * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate withthe boards 🤯
   * ~~[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)~~
   * ~~[Live JS Demo](https://webreflection.github.io/micro-repl/)~~
 
@@ -19,7 +19,6 @@ There is a super *write and wait* core exported as `micro-repl` module and a ful
 
 The difference in offered features is the following one:
 
-  * **micro-repl** provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations. **Note**: this initial *way-too-little* idea might be removed in the future!
   * **micro-repl/board** instead offers a full *REPL* ability through *Xterm.js*:
     * board `name` showed as soon as connected
     * fully interactive *REPL* mode out of the box
@@ -31,6 +30,7 @@ The difference in offered features is the following one:
     * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
     * *AutoFit* and *WebLinks* plugins available out of the box
     * all imports are dynamic so it's size is still minimal before its usage
+  * **micro-repl** (*deprecated*) provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations. **Note**: this initial *way-too-little* idea might be removed in the future!
 
 Please **note** `micro-repl/board` might become the main default export of this project.
 
@@ -134,7 +134,27 @@ Please note this module is experimental. The current exports might change if act
 
 - - -
 
+### Troubleshooting
+
+If you are on Linux and you can't see your *Prime* you can try to force-enable it by writing the following content into `/etc/udev/rules.d/50-myusb.rules`:
+
+```
+KERNEL=="ttyACM0",MODE="0666"
+KERNEL=="ttyACM1",MODE="0666"
+KERNEL=="ttyACM2",MODE="0666"
+```
+
+After a reboot, this instruction should enable it and you should see it selectable.
+
+![ttyACM0 selectable](./css/spike.png)
+
+### Credits
+
+This project has been inspired by [pyrepl-js](https://github.com/gabrielsessions/pyrepl-js) but because I think *React* and *TypeScript*, plus the rest of the logic, was a bit too much for a basic core *REPL*, I've decided to create a minimal *JS* standard module able to do pretty much the same in way less code to maintain. Feel free to use that project if you want a more rich *UI* around the connection, events instead of just promises to deal with unbuffered data as sent by the controller, and everything else in there which I didn't need to create those live demoes.
+
 #### micro-repl TS signature
+
+**deprecated**
 
 Once a `repl` has been successfully initialized, it offers this *API*:
 
@@ -187,6 +207,8 @@ repl.active; // false
 ```
 
 ## Xterm.js REPL
+
+**deprecated**
 
 The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a real-world *REPL* solution.
 
@@ -251,19 +273,3 @@ There is the `terminal` instance exposed though, and the options on `init` accep
 </body>
 </html>
 ```
-
-### Troubleshooting
-
-If you are on Linux and you can't see your *Prime* you can try to force-enable it by writing the following content into `/etc/udev/rules.d/50-myusb.rules`:
-
-```
-KERNEL=="ttyACM0",MODE="0666"
-```
-
-After a reboot, this instruction should enable it and you should see it selectable.
-
-![ttyACM0 selectable](./css/spike.png)
-
-### Credits
-
-This project has been inspired by [pyrepl-js](https://github.com/gabrielsessions/pyrepl-js) but because I think *React* and *TypeScript*, plus the rest of the logic, was a bit too much for a basic core *REPL*, I've decided to create a minimal *JS* standard module able to do pretty much the same in way less code to maintain. Feel free to use that project if you want a more rich *UI* around the connection, events instead of just promises to deal with unbuffered data as sent by the controller, and everything else in there which I didn't need to create those live demoes.

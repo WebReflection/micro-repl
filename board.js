@@ -203,11 +203,8 @@ export default function Board({
               terminal.write(chunk);
               if (accumulator === '.') {
                 accumulator = '';
-                for (let i = 2; i < 4; i++) {
-                  terminal.write('\x1b[A'.repeat(i));
-                  terminal.write('\x1b[2K'.repeat(i));
-                  terminal.write('\x1b[B'.repeat(i));
-                }
+                // move cursor up 2 rows and clean then put it back
+                terminal.write('\x1b[A\x1b[A\x1b[2K\x1b[B\x1b[B');
               }
             }
           })

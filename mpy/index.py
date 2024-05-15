@@ -28,6 +28,7 @@ def on_disconnect():
     print("disconnected")
     connect.disabled = False
     reset.disabled = True
+    message.hidden = True
 
 def on_error(error):
     window.console.warn(error)
