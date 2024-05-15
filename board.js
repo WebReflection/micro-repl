@@ -294,7 +294,7 @@ export default function Board({
         await exec(code, writer, lines);
         while (lines.length && !lines.at(-1)) lines.pop();
         const result = lines.at(-1);
-        if (/^[a-zA-Z0-9._()]+$/.test(result)) {
+        if (/^[a-zA-Z0-9._]+$/.test(result)) {
           await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);
           evaluating = 2;
           while (!accumulator.endsWith(`${ENTER}>>> `)) await sleep(1);

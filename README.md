@@ -118,6 +118,8 @@ type MicroREPLBoard = {
   // write any string directly to the board
   write: (code: string) => Promise<void>;
   // eval any code (no output while processing)
+  // if the end of the `code` is a reference, it tries
+  // to json serialize it and parse it back as result
   eval: (code: string) => Promise<void>;
 }
 ```
