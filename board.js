@@ -16,6 +16,7 @@ const ADDON_FIT = '0.10.0';
 const ADDON_WEB_LINKS = '0.11.0';
 
 const { assign } = Object;
+const { parse } = JSON;
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -39,8 +40,9 @@ const dependencies = ({ ownerDocument }) => {
   ];
 };
 
-const exec = async (code, writer) => {
+const exec = async (code, writer, lines = []) => {
   for (const line of code.split(LINE_SEPARATOR)) {
+    lines.push(line);
     await writer.write(`${line}\r`);
     await sleep(10);
   }
@@ -116,11 +118,12 @@ export default function Board({
   ondata = options.ondata,
   theme = options.theme,
 } = options) {
-  let evaluating = false;
+  let evaluating = 0;
   let port = null;
   let terminal = null;
   let element = null;
   let name = 'unknown';
+  let accumulator = '';
   let aborter, readerClosed, writer, writerClosed;
 
   const board = {
@@ -172,32 +175,34 @@ export default function Board({
         const decoder = new TextDecoder;
         const machine = Promise.withResolvers();
         let waitForMachine = true;
-        let accMachine = '';
 
         const writable = new WritableStream({
           write: createWriter({
             write(chunk) {
-              if (evaluating) return;
+              if (evaluating) {
+                if (1 < evaluating) accumulator += decoder.decode(chunk);
+                return;
+              }
               if (waitForMachine) {
                 const text = decoder.decode(chunk);
-                if (accMachine === '' && text.startsWith(ENTER))
+                if (accumulator === '' && text.startsWith(ENTER))
                   chunk = new Uint8Array(chunk.slice(ENTER.length));
-                accMachine += text;
-                let i = accMachine.indexOf(MACHINE);
+                accumulator += text;
+                let i = accumulator.indexOf(MACHINE);
                 if (-1 < i) {
                   i += MACHINE.length;
-                  const gotIt = accMachine.slice(i).split(ENTER);
+                  const gotIt = accumulator.slice(i).split(ENTER);
                   if (gotIt.length === 2) {
                     waitForMachine = false;
-                    accMachine = '.';
+                    accumulator = '.';
                     machine.resolve(gotIt[0]);
                   }
                 }
               }
               else ondata(chunk);
               terminal.write(chunk);
-              if (accMachine === '.') {
-                accMachine = '';
+              if (accumulator === '.') {
+                accumulator = '';
                 for (let i = 2; i < 4; i++) {
                   terminal.write('\x1b[A'.repeat(i));
                   terminal.write('\x1b[2K'.repeat(i));
@@ -285,9 +290,24 @@ export default function Board({
     },
 
     eval: async code => {
-      evaluating = true;
-      await exec(code, writer);
-      evaluating = false;
+      if (port) {
+        evaluating = 1;
+        let outcome;
+        const lines = [];
+        await exec(code, writer, lines);
+        while (lines.length && !lines.at(-1)) lines.pop();
+        const result = lines.at(-1);
+        if (/^[a-zA-Z0-9._()]+$/.test(result)) {
+          await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);
+          evaluating = 2;
+          while (!accumulator.endsWith(`${ENTER}>>> `)) await sleep(1);
+          try { outcome = parse(accumulator.split(ENTER).at(-2)); }
+          finally { accumulator = ''; }
+        }
+        evaluating = 0;
+        return outcome;
+      }
+      else onerror(reason('eval'));
     },
 
     reset: async (delay = 500) => {
