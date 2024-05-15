@@ -39,6 +39,13 @@ const dependencies = ({ ownerDocument }) => {
   ];
 };
 
+const exec = async (code, writer) => {
+  for (const line of code.split(LINE_SEPARATOR)) {
+    await writer.write(`${line}\r`);
+    await sleep(10);
+  }
+};
+
 const noop = () => {};
 
 /**
@@ -46,6 +53,8 @@ const noop = () => {};
  * @returns {Error}
  */
 const reason = action => new Error(`Unable to ${action} when disconnected`);
+
+const sleep = async delay => new Promise(res => setTimeout(res, delay));
 
 /**
  * Return a specific value or infer it from the live element.
@@ -89,7 +98,7 @@ const options = {
  * @prop {number} baudRate
  * @prop {string} name
  * @prop {import('xterm').Terminal} terminal
- * @prop {(target:Element) => Promise<MicroREPLBoard | void>} connect
+ * @prop {(target:Element | string) => Promise<MicroREPLBoard | void>} connect
  * @prop {() => Promise<void>} disconnect
  * @prop {() => Promise<void>} reset
  * @prop {(code:string) => Promise<void>} write
@@ -107,6 +116,7 @@ export default function Board({
   ondata = options.ondata,
   theme = options.theme,
 } = options) {
+  let evaluating = false;
   let port = null;
   let terminal = null;
   let element = null;
@@ -124,6 +134,12 @@ export default function Board({
 
     connect: async target => {
       if (port) return board;
+      if (typeof target === 'string') {
+        target = (
+          document.getElementById(target) ||
+          document.querySelector(target)
+        );
+      }
       try {
         const libs = dependencies(target);
 
@@ -161,6 +177,7 @@ export default function Board({
         const writable = new WritableStream({
           write: createWriter({
             write(chunk) {
+              if (evaluating) return;
               if (waitForMachine) {
                 const text = decoder.decode(chunk);
                 if (accMachine === '' && text.startsWith(ENTER))
@@ -216,14 +233,7 @@ export default function Board({
             // prevent errors with huge content passed in paste mode
             else if (pastMode && composed && ctrlKey && shiftKey && code === 'KeyV') {
               event.preventDefault();
-              navigator.clipboard.readText().then(async text => {
-                for (const line of text.split(LINE_SEPARATOR)) {
-                  await writer.write(`${line}\r`);
-                  const { promise, resolve } = Promise.withResolvers();
-                  setTimeout(resolve, 10);
-                  await promise;
-                }
-              });
+              navigator.clipboard.readText().then(code => exec(code, writer));
               return false;
             }
           }
@@ -274,11 +284,17 @@ export default function Board({
       }
     },
 
+    eval: async code => {
+      evaluating = true;
+      await exec(code, writer);
+      evaluating = false;
+    },
+
     reset: async (delay = 500) => {
       if (port) {
         await writer.write(CONTROL_D);
         while (port) {
-          await new Promise(res => setTimeout(res, delay));
+          await sleep(delay);
           // for boards losing the REPL mode on soft-reset
           if (port && /\n $/.test(element.innerText))
             await writer.write(CONTROL_C);

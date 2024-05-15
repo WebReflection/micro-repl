@@ -109,13 +109,16 @@ type MicroREPLBoard = {
   readonly terminal: xterm.Terminal;
   // ⚠️ must be done on user action !!!
   // connects the board and show the REPL in the specified `target`
-  connect: (target: Element) => Promise<MicroREPLBoard | void>;
+  // `target` can be either a DOM Element or an element ID or a CSS selector.
+  connect: (target: Element | string) => Promise<MicroREPLBoard | void>;
   // disconnect the board and invoke ondisconnect
   disconnect: () => Promise<void>;
   // soft-reset the board and put it back into REPL mode
   reset: () => Promise<void>;
   // write any string directly to the board
   write: (code: string) => Promise<void>;
+  // eval any code (no output while processing)
+  eval: (code: string) => Promise<void>;
 }
 ```
 
