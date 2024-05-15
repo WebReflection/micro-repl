@@ -7,7 +7,8 @@
   "unpkg": "./micro-repl.js",
   "exports": {
     ".": "./micro-repl.js",
-    "./board": "./board.js",
+    "./serial": "./serial.js",
+    "./board": "./serial.js",
     "./x": "./x.js"
   },
   "scripts": {

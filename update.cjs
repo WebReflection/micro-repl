@@ -3,7 +3,7 @@ const { readFileSync, writeFileSync } = require('fs');
 
 const { devDependencies } = require(join(__dirname, 'package.json'));
 
-const board = join(__dirname, 'board.js');
+const board = join(__dirname, 'serial.js');
 
 let content = readFileSync(board).toString();
 

@@ -15,24 +15,22 @@ Each demo has been successfully tested on both [Spike Prime](https://spike.legoe
 
 ## Features
 
-There is a super *write and wait* core exported as `micro-repl` module and a full *REPL* mode exported as `micro-repl/x`.
+The currently maintained and developed export is `micro-repl/board` which supports the following features:
 
-The difference in offered features is the following one:
+  * board `name` showed as soon as connected
+  * fully interactive *REPL* mode out of the box
+  * tab completion works out of the box too
+  * every *Control+X* combination just works
+  * stopping running code via *Control+C* also works
+  * pasting code also works
+  * paste mode never overflows the writes
+  * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
+  * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
+  * *AutoFit* and *WebLinks* plugins available out of the box
+  * all imports are dynamic so it's size is still minimal before its usage
+  * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell
 
-  * **micro-repl/board** instead offers a full *REPL* ability through *Xterm.js*:
-    * board `name` showed as soon as connected
-    * fully interactive *REPL* mode out of the box
-    * tab completion works out of the box too
-    * every *Control+X* combination just works
-    * pasting code also works
-    * stopping running code via *Control+C* also works
-    * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
-    * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
-    * *AutoFit* and *WebLinks* plugins available out of the box
-    * all imports are dynamic so it's size is still minimal before its usage
-  * **micro-repl** (*deprecated*) provides a *Promise* based *API* with no way to intercept or interact with the code while it's executing. It's an extremely tiny `await board.write(python)` followed by an `await board.result`, or `board.output` ... and it does just that: perfect for little or one-off operations. **Note**: this initial *way-too-little* idea might be removed in the future!
-
-Please **note** `micro-repl/board` might become the main default export of this project.
+Please **note** `micro-repl/board` is going to be renamed as `micro-repl/serial` instead, to allow `micro-repl/bt` and others within the same ease of use.
 
 ## How To / Documentation
 
