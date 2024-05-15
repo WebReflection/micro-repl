@@ -141,9 +141,7 @@ Please note this module is experimental. The current exports might change if act
 If you are on Linux and you can't see your *Prime* you can try to force-enable it by writing the following content into `/etc/udev/rules.d/50-myusb.rules`:
 
 ```
-KERNEL=="ttyACM0",MODE="0666"
-KERNEL=="ttyACM1",MODE="0666"
-KERNEL=="ttyACM2",MODE="0666"
+KERNEL=="ttyACM[0-9]*",MODE="0666"
 ```
 
 After a reboot, this instruction should enable it and you should see it selectable.
