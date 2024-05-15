@@ -181,9 +181,11 @@ export default function Board({
               terminal.write(chunk);
               if (accMachine === '.') {
                 accMachine = '';
-                terminal.write('\x1b[A'.repeat(2));
-                terminal.write('\x1b[2K'.repeat(2));
-                terminal.write('\x1b[B'.repeat(2));
+                for (let i = 2; i < 4; i++) {
+                  terminal.write('\x1b[A'.repeat(i));
+                  terminal.write('\x1b[2K'.repeat(i));
+                  terminal.write('\x1b[B'.repeat(i));
+                }
               }
             }
           })
