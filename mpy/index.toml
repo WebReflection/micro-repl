@@ -1,4 +1,8 @@
 [js_modules.main]
 "https://cdn.jsdelivr.net/npm/codedent/+esm" = "dedent"
 "../serial.js" = "micro_repl"
-# "https://esm.run/micro-repl/board" = "micro_repl"
+# "https://esm.run/micro-repl/serial" = "micro_repl"
+
+# DEMO
+# LTK: https://pysheets.app/go
+# Docs: https://docs.pyscript.net/2024.5.2/
