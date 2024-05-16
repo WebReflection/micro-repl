@@ -1,5 +1,6 @@
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
+const CONTROL_E = '\x05';
 const ENTER = '\r\n';
 const END = `${ENTER}>>> `;
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
@@ -178,37 +179,25 @@ export default function Board({
 
         const decoder = new TextDecoder;
         const machine = Promise.withResolvers();
-        let waitForMachine = true;
+        let waitForMachine = false;
 
         const writable = new WritableStream({
           write: createWriter({
             write(chunk) {
               if (evaluating) {
-                if (1 < evaluating) accumulator += decoder.decode(chunk);
-                return;
+                if (1 < evaluating)
+                  accumulator += decoder.decode(chunk);
               }
-              if (waitForMachine) {
-                const text = decoder.decode(chunk);
-                if (accumulator === '' && text.startsWith(ENTER))
-                  chunk = new Uint8Array(chunk.slice(ENTER.length));
-                accumulator += text;
+              else if (waitForMachine) {
+                accumulator += decoder.decode(chunk);
                 if (accumulator.endsWith(END) && accumulator.includes(MACHINE)) {
-                  waitForMachine = false;
                   machine.resolve(lml());
-                  accumulator = '.';
+                  accumulator = '';
                 }
               }
-              else ondata(chunk);
-              terminal.write(chunk);
-              if (accumulator === '.') {
-                accumulator = '';
-                // calculate how many rows should be cleared
-                const line = MACHINE.length + ENTER.length;
-                const rows = Math.ceil(line / terminal.cols);
-                // erase previous row and bring the cursor back
-                for (let i = 0; i < rows; i++)
-                  terminal.write('\x1b[A\x1b[A\x1b[M\x1b[B');
-                terminal.write('>>> ');
+              else {
+                ondata(chunk);
+                terminal.write(chunk);
               }
             }
           })
@@ -255,10 +244,22 @@ export default function Board({
         fitAddon.fit();
         terminal.focus();
 
+        // bootstrap with board name details
         await writer.write(CONTROL_C);
+        await sleep(options.baudRate * 50 / baudRate);
+        waitForMachine = true;
+
+        // enter paste mode - no history attached
+        await writer.write(CONTROL_E);
         await writer.write(MACHINE);
+        await writer.write(CONTROL_D);
 
         name = await machine.promise;
+        waitForMachine = false;
+
+        // clean up latest row and start fresh
+        terminal.write('\x1b[M');
+        terminal.write(`${name}${END}`);
 
         onconnect();
 
