@@ -5,9 +5,7 @@
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
   * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
-  * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate withthe boards 🤯
-  * ~~[Live Xterm Demo](https://webreflection.github.io/micro-repl/xterm/)~~
-  * ~~[Live JS Demo](https://webreflection.github.io/micro-repl/)~~
+  * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the boards 🤯
 
 Each demo has been successfully tested on both [Spike Prime](https://spike.legoeducation.com/prime/lobby/), [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) and [Adafruit PyPortal - CircuitPython](https://www.adafruit.com/product/4116) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
 
@@ -23,22 +21,22 @@ The currently maintained and developed export is `micro-repl/board` which suppor
   * every *Control+X* combination just works
   * stopping running code via *Control+C* also works
   * pasting code also works
-  * paste mode never overflows the writes
+  * paste mode never overflows the writes (big files copy pasted with ease)
   * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
   * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
   * *AutoFit* and *WebLinks* plugins available out of the box
   * all imports are dynamic so it's size is still minimal before its usage
   * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell
 
-Please **note** `micro-repl/board` is going to be renamed as `micro-repl/serial` instead, to allow `micro-repl/bt` and others within the same ease of use.
+Please **note** `micro-repl/board` is going to be renamed as `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
 
 ## How To / Documentation
 
-The easiest way to use `micro-repl/board` is via *CDN*:
+The easiest way to use `micro-repl/serial` or `micro-repl/board` is via *CDN*:
 
 ```html
 <script type="module">
-  import Board from 'https://esm.run/micro-repl/board';
+  import Board from 'https://esm.run/micro-repl/serial';
 
   const board = new Board({
     // all optionals
@@ -202,72 +200,4 @@ await repl.close();
 
 // check the board status again
 repl.active; // false
-```
-
-## Xterm.js REPL
-
-**deprecated**
-
-The `micro-repl/x` variant brings in the mighty [Xterm.js](https://xtermjs.org/) to the mix, enabling a real-world *REPL* solution.
-
-The main difference in its signature is that, due *Xterm.js* orchestration, there is no `result` and the `output` simply returns the content of the terminal.
-
-There is the `terminal` instance exposed though, and the options on `init` accept an `onData(buffer:Uint8Array)` callback too.
-
-#### micro-repl/x TS signature
-
-```ts
-// The default export TS signature
-({ target, baudRate, onData, onceClosed, }?: {
-    target: Element; // where to show the terminal
-    baudRate: number; // default: 115200
-    onData(buffer:Uint8Array): void;
-    onceClosed(error: Error | null): void;
-}) => Promise<{
-    readonly name: string;
-    readonly active: boolean;
-    readonly terminal: Terminal;
-    readonly output: string;
-    write: (code: string) => Promise<...>;
-    close: () => Promise<...>;
-}>
-```
-
-### micro-repl/x Example
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script type="module">
-    import xtermInit from 'https://esm.run/micro-repl/x';
-
-    const decoder = new TextDecoder;
-
-    connect.onclick = async () => {
-      connect.disabled = true;
-      // bootstrap after user action
-      const board = await xtermInit({
-        target: repl,
-        onData(buffer) {
-          console.log(decoder.decode(buffer));
-        },
-        onceClosed(error) {
-          connect.disabled = false;
-          if (error) console.warn(error);
-        }
-      });
-
-      // prints out the board name
-      console.log(board.name);
-    };
-  </script>
-</head>
-<body>
-  <button id="connect">connect</button>
-  <div id="repl"></div>
-</body>
-</html>
 ```
