@@ -1,6 +1,7 @@
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
 const ENTER = '\r\n';
+const END = `${ENTER}>>> `;
 const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
 const MACHINE = [
   'from sys import implementation as _',
@@ -126,6 +127,9 @@ export default function Board({
   let accumulator = '';
   let aborter, readerClosed, writer, writerClosed;
 
+  // last meaningful line
+  const lml = () => accumulator.split(ENTER).at(-2);
+
   const board = {
     // board instanceof Board
     __proto__: Board.prototype,
@@ -188,23 +192,22 @@ export default function Board({
                 if (accumulator === '' && text.startsWith(ENTER))
                   chunk = new Uint8Array(chunk.slice(ENTER.length));
                 accumulator += text;
-                let i = accumulator.indexOf(MACHINE);
-                if (-1 < i) {
-                  i += MACHINE.length;
-                  const gotIt = accumulator.slice(i).split(ENTER);
-                  if (gotIt.length === 2) {
-                    waitForMachine = false;
-                    accumulator = '.';
-                    machine.resolve(gotIt[0]);
-                  }
+                if (accumulator.endsWith(END) && accumulator.includes(MACHINE)) {
+                  machine.resolve(lml());
+                  accumulator = '.';
                 }
               }
               else ondata(chunk);
               terminal.write(chunk);
               if (accumulator === '.') {
                 accumulator = '';
-                // move cursor up 2 rows and clean then put it back
-                terminal.write('\x1b[A\x1b[A\x1b[2K\x1b[B\x1b[B');
+                // calculate how many rows should be cleared
+                const line = MACHINE.length + ENTER.length;
+                const rows = Math.ceil(line / terminal.cols);
+                // erase previous row and bring the cursor back
+                for (let i = 0; i < rows; i++)
+                  terminal.write('\x1b[A\x1b[A\x1b[M\x1b[B');
+                terminal.write('>>> ');
               }
             }
           })
@@ -297,8 +300,8 @@ export default function Board({
         if (/^[a-zA-Z0-9._]+$/.test(result)) {
           await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);
           evaluating = 2;
-          while (!accumulator.endsWith(`${ENTER}>>> `)) await sleep(1);
-          try { outcome = parse(accumulator.split(ENTER).at(-2)); }
+          while (!accumulator.endsWith(END)) await sleep(1);
+          try { outcome = parse(lml()); }
           finally { accumulator = ''; }
         }
         evaluating = 0;
