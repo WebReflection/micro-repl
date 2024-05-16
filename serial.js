@@ -193,6 +193,7 @@ export default function Board({
                   chunk = new Uint8Array(chunk.slice(ENTER.length));
                 accumulator += text;
                 if (accumulator.endsWith(END) && accumulator.includes(MACHINE)) {
+                  waitForMachine = false;
                   machine.resolve(lml());
                   accumulator = '.';
                 }
