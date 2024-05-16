@@ -166,9 +166,9 @@ export default function Board({
           cursorBlink: true,
           cursorStyle: "block",
           theme: {
-            color,
-            background,
+            cursor: color,
             foreground: color,
+            background: style(target, background, 'background-color'),
           },
         });
 

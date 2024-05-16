@@ -47,6 +47,10 @@ board = Board(to_js({
     "onconnect": on_connect,
     "ondisconnect": on_disconnect,
     "onerror": on_error,
+    # "theme": {
+    #     "background": "infer",
+    #     "foreground": "infer",
+    # }
 }))
 
 connect, reset, message, output, = document.querySelectorAll("#connect, #reset, #message, #output")
