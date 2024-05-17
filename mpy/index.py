@@ -4,11 +4,13 @@ from pyscript.ffi import to_js
 from pyscript.js_modules.micro_repl import default as Board
 from pyscript.js_modules.dedent import default as dedent
 
-def on_keydown(event):
+async def on_keydown(event):
     if event.code == "Enter":
-        import json
+        import asyncio, json
         value = json.dumps(message.value)
         message.value = ""
+        # await board.write(f"""print("showing:", {value})\r\n""")
+        # await asyncio.sleep(0.1)
         board.eval(dedent(f"""
             from hub import light_matrix
 
