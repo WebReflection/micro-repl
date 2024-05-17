@@ -1,6 +1,5 @@
 from pyscript import document, window
 
-from pyscript.ffi import to_js
 from pyscript.js_modules.micro_repl import default as Board
 from pyscript.js_modules.dedent import default as dedent
 
@@ -45,7 +44,7 @@ async def on_click(event):
     await board.connect(output)
     window.board = board
 
-board = Board(to_js({
+board = Board({
     "onconnect": on_connect,
     "ondisconnect": on_disconnect,
     "onerror": on_error,
@@ -53,7 +52,7 @@ board = Board(to_js({
     #     "background": "infer",
     #     "foreground": "infer",
     # }
-}))
+})
 
 connect, reset, message, output, = document.querySelectorAll("#connect, #reset, #message, #output")
 
