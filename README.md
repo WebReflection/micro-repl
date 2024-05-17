@@ -7,15 +7,23 @@ An easy, SerialPort based, MicroPython REPL for micro controllers.
   * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the boards 🤯
 
-Each demo has been successfully tested on both [Spike Prime](https://spike.legoeducation.com/prime/lobby/), [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) and [Adafruit PyPortal - CircuitPython](https://www.adafruit.com/product/4116) ( <sup><sub>up to the `help()` it should work in other boards too</sub></sup> ).
+### Supported Boards
+
+It is very likely that your *MicroPython* based board works too but these have been manually, and personally, tested during the development of this module:
+
+  * [Spike Prime](https://spike.legoeducation.com/prime/lobby/)
+  * [Raspberry Pi Pico and Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
+  * [Adafruit PyPortal - CircuitPython](https://www.adafruit.com/product/4116)
+  * [Arduino Nano ESP32](https://store.arduino.cc/products/nano-esp32)<br>
+    <sup>I used `dfu-util -a 0 -d 0x2341:0x0070 -D ./ARDUINO_NANO_ESP32-X.app-bin` to install *MicroPython* on it: [app-bin download](https://micropython.org/download/ARDUINO_NANO_ESP32/)</sup>
 
 - - -
 
 ## Features
 
-The currently maintained and developed export is `micro-repl/board` which supports the following features:
+The currently maintained and developed export is `micro-repl/serial` (*previously known as board*) which supports the following features:
 
-  * board `name` showed as soon as connected
+  * board `name` showed as soon as connected and associated to the *board* instance
   * fully interactive *REPL* mode out of the box
   * tab completion works out of the box too
   * every *Control+X* combination just works
@@ -28,17 +36,18 @@ The currently maintained and developed export is `micro-repl/board` which suppor
   * all imports are dynamic so it's size is still minimal before its usage
   * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell
 
-Please **note** `micro-repl/board` is going to be renamed as `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
+The `micro-repl/board` alias still exists but it's now `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
 
 ## How To / Documentation
 
-The easiest way to use `micro-repl/serial` or `micro-repl/board` is via *CDN*:
+The easiest way to use `micro-repl/serial` is via *CDN*:
 
 ```html
 <script type="module">
   import Board from 'https://esm.run/micro-repl/serial';
 
-  const board = new Board({
+  // either Board(...) or new Board(...)
+  const board = Board({
     // all optionals
     baudRate: 9600, // defaults to 115200
     onconnect() { console.info('connected') },
@@ -128,7 +137,7 @@ Please also note this is not the same as `board.terminal.write(...)` because the
 
 <sup><sub>**WARNING**</sub></sup>
 
-Please note this module is experimental. The current exports might change if actually the *board* is the best option this module offers (and I am definitively leading toward this conclusion).
+Please note this module is experimental. The current exports might change if actually the *board* reference is the best option this module offers (and I am definitively leading toward this conclusion).
 
 - - -
 
