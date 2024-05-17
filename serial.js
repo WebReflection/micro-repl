@@ -3,7 +3,7 @@ const CONTROL_D = '\x04';
 const CONTROL_E = '\x05';
 const ENTER = '\r\n';
 const END = `${ENTER}>>> `;
-const LINE_SEPARATOR = /(?:\r|\n|\r\n)/;
+const LINE_SEPARATOR = /(?:\r\n|\r|\n)/;
 const MACHINE = [
   'from sys import implementation as _',
   'print(hasattr(_, "_machine") and _._machine or _.name)',
@@ -297,7 +297,7 @@ export default function Board({
         let outcome;
         const lines = [];
         await exec(code, writer, lines);
-        while (lines.length && !lines.at(-1)) lines.pop();
+        while (lines.length && !lines.at(-1).trim()) lines.pop();
         const result = lines.at(-1);
         if (/^[a-zA-Z0-9._]+$/.test(result)) {
           await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);

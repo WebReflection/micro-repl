@@ -17,6 +17,18 @@ async def on_keydown(event):
         """))
         return False
 
+async def on_toggle(event):
+    led.disabled = True
+    value = await board.eval(dedent(f"""
+        led_value = led.value()
+        led_value
+    """))
+    if value == 1:
+        await board.eval("led.off()")
+    else:
+        await board.eval("led.on()")
+    led.disabled = False
+
 def on_connect():
     print("connected")
     connect.disabled = True
@@ -24,11 +36,15 @@ def on_connect():
     if board.name == "SPIKE Prime with STM32F413":
         message.hidden = False
         message.onkeydown = on_keydown
+    else:
+        led.hidden = False
+        led.onclick = on_toggle
 
 def on_disconnect():
     print("disconnected")
     connect.disabled = False
     reset.disabled = True
+    led.hidden = True
     message.hidden = True
 
 def on_error(error):
@@ -48,13 +64,11 @@ board = Board({
     "onconnect": on_connect,
     "ondisconnect": on_disconnect,
     "onerror": on_error,
-    # "theme": {
-    #     "background": "infer",
-    #     "foreground": "infer",
-    # }
 })
 
-connect, reset, message, output, = document.querySelectorAll("#connect, #reset, #message, #output")
+connect, reset, led, message, output, = document.querySelectorAll(
+    "#connect, #reset, #led, #message, #output"
+)
 
 connect.onclick = on_click
 reset.onclick = on_reset
