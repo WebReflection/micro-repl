@@ -1,4 +1,6 @@
 [js_modules.main]
-"https://cdn.jsdelivr.net/npm/codedent/+esm" = "dedent"
-"../serial.js" = "micro_repl"
-# "https://esm.run/micro-repl/serial" = "micro_repl"
+"https://esm.run/codedent" = "dedent"
+"https://esm.run/micro-repl/serial" = "micro_repl"
+
+[files]
+"./events.py" = "./"
