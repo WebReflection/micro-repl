@@ -167,6 +167,7 @@ export default function Board({
 
         const { background, foreground } = theme;
         const color = style(target, foreground, 'color');
+        const behind = style(target, background, 'background-color');
 
         terminal = new Terminal({
           cursorBlink: true,
@@ -174,7 +175,9 @@ export default function Board({
           theme: {
             cursor: color,
             foreground: color,
-            background: style(target, background, 'background-color'),
+            selectionForeground: behind,
+            background: behind,
+            selectionBackground: color,
           },
         });
 
