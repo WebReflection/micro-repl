@@ -76,6 +76,7 @@ const style = (target, value, property) => (
 /**
  * @typedef {Object} MicroREPLOptions
  * @prop {number} [baudRate=115200]
+ * @prop {string} [dataType='buffer']
  * @prop {() => void} [onconnect]
  * @prop {() => void} [ondisconnect]
  * @prop {(error:Error) => void} [onerror=console.error]
@@ -86,6 +87,7 @@ const style = (target, value, property) => (
 /** @type {MicroREPLOptions} */
 const options = {
   baudRate: 115200,
+  dataType: 'buffer',
   onconnect: noop,
   ondisconnect: noop,
   onerror: console.error,
@@ -106,6 +108,7 @@ const options = {
  * @prop {() => Promise<void>} disconnect
  * @prop {() => Promise<void>} reset
  * @prop {(code:string) => Promise<void>} write
+ * @prop {(code:string, options?: { hidden:boolean }) => Promise<void>} eval
  */
 
 /**
@@ -114,6 +117,7 @@ const options = {
  */
 export default function Board({
   baudRate = options.baudRate,
+  dataType = options.dataType,
   onconnect = options.onconnect,
   ondisconnect = options.ondisconnect,
   onerror = options.onerror,
@@ -121,6 +125,7 @@ export default function Board({
   theme = options.theme,
 } = options) {
   let evaluating = 0;
+  let showEval = false;
   let port = null;
   let terminal = null;
   let element = null;
@@ -181,12 +186,22 @@ export default function Board({
         const machine = Promise.withResolvers();
         let waitForMachine = false;
 
+        const reveal = chunk => {
+          if (dataType === 'string')
+            ondata(decoder.decode(chunk));
+          else
+            ondata(chunk);
+          terminal.write(chunk);
+        };
+
         const writable = new WritableStream({
           write: createWriter({
             write(chunk) {
               if (evaluating) {
                 if (1 < evaluating)
                   accumulator += decoder.decode(chunk);
+                else if (showEval)
+                  reveal(chunk);
               }
               else if (waitForMachine) {
                 accumulator += decoder.decode(chunk);
@@ -196,8 +211,7 @@ export default function Board({
                 }
               }
               else {
-                ondata(chunk);
-                terminal.write(chunk);
+                reveal(chunk);
               }
             }
           })
@@ -291,9 +305,10 @@ export default function Board({
       }
     },
 
-    eval: async code => {
+    eval: async (code, { hidden = true } = {}) => {
       if (port) {
         evaluating = 1;
+        showEval = !hidden;
         let outcome;
         const lines = [];
         await exec(code, writer, lines);
@@ -307,6 +322,7 @@ export default function Board({
           finally { accumulator = ''; }
         }
         evaluating = 0;
+        showEval = false;
         return outcome;
       }
       else onerror(reason('eval'));

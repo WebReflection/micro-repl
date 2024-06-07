@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>micro-repl/serial</title>
+  <link rel="stylesheet" href="../css/index.css">
+  <script type="module">
+    import Board from '../serial.js';
+  
+    globalThis.board = Board({
+      dataType: 'string',
+      onconnect() { console.info('connected') },
+      ondisconnect() { console.warn('disconnected') },
+      onerror(error) { console.error(error) },
+      ondata(buffer) {
+        console.log(buffer);
+      }
+    });
+  
+    // to connect a board a user action/gesture is needed
+    connect.onclick = async event => {
+      event.preventDefault();
+  
+      // connect the board to a DOM element to show the terminal
+      await board.connect(repl);
+    };
+  </script>
+</head>
+<body>
+  <button id="connect">connect</button>
+  <div id="repl"></div>
+</body>
+</html>

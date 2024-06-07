@@ -34,7 +34,7 @@ The currently maintained and developed export is `micro-repl/serial` (*previousl
   * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
   * *AutoFit* and *WebLinks* plugins available out of the box
   * all imports are dynamic so it's size is still minimal before its usage
-  * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell
+  * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell. If the extra `options` reference `hidden` value is `false`, it also shows the evaluated code while streaming it to the board.
 
 The `micro-repl/board` alias still exists but it's now `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
 
@@ -51,7 +51,7 @@ The easiest way to use `micro-repl/serial` is via *CDN*:
     // all optionals
     baudRate: 9600, // defaults to 115200
     onconnect() { console.info('connected') },
-    ondisconnect() { console.warn('disconnected') }
+    ondisconnect() { console.warn('disconnected') },
     onerror(error) { console.error(error) },
     ondata(buffer) { }
   });
@@ -79,6 +79,8 @@ These are all optional fields that can be passed when creating a new *Board*.
 type MicroREPLOptions = {
   // default: 115200
   baudRate?: number | undefined;
+  // default: 'buffer'
+  dataType?: 'buffer' | 'string';
   // default: console.error
   onerror?: ((error: Error) => void) | undefined;
   // default: () => void - notifies when the board is connected
@@ -124,8 +126,10 @@ type MicroREPLBoard = {
   write: (code: string) => Promise<void>;
   // eval any code (no output while processing)
   // if the end of the `code` is a reference, it tries
-  // to json serialize it and parse it back as result
-  eval: (code: string) => Promise<void>;
+  // to json serialize it and parse it back as result.
+  // if the options.hidden is `false` it shows the input
+  // while evaluating code.
+  eval: (code: string, options?: { hidden:boolean }) => Promise<void>;
 }
 ```
 
