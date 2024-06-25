@@ -35,6 +35,7 @@ The currently maintained and developed export is `micro-repl/serial` (*previousl
   * *AutoFit* and *WebLinks* plugins available out of the box
   * all imports are dynamic so it's size is still minimal before its usage
   * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell. If the extra `options` reference `hidden` value is `false`, it also shows the evaluated code while streaming it to the board.
+  * `paste` method to pass along code in "*paste mode*" with ease
 
 The `micro-repl/board` alias still exists but it's now `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
 
@@ -53,7 +54,10 @@ The easiest way to use `micro-repl/serial` is via *CDN*:
     onconnect() { console.info('connected') },
     ondisconnect() { console.warn('disconnected') },
     onerror(error) { console.error(error) },
-    ondata(buffer) { }
+    ondata(buffer) { },
+    // pass a different JSON parser if needed: json.loads,
+    // as example, would return directly Python references
+    onresult: JSON.parse,
   });
 
   // to connect a board a user action/gesture is needed
@@ -129,7 +133,9 @@ type MicroREPLBoard = {
   // to json serialize it and parse it back as result.
   // if the options.hidden is `false` it shows the input
   // while evaluating code.
-  eval: (code: string, options?: { hidden:boolean }) => Promise<void>;
+  eval: (code: string, options?: { hidden:boolean }) => Promise<any>;
+  // enter paste mode, write all code, then exit from paste mode
+  paste: (code: string, options?: { hidden:boolean }) => Promise<void>;
 }
 ```
 

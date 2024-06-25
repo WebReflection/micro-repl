@@ -1,5 +1,6 @@
 from pyscript import document, window
 from pyscript.js_modules.micro_repl import default as Board
+import json
 
 # setup the board
 def on_connect():
@@ -26,6 +27,7 @@ board = Board({
     "onconnect": on_connect,
     "ondisconnect": on_disconnect,
     "onerror": on_error,
+    "onresult": json.loads,
 })
 
 # setup the DOM

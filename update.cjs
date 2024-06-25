@@ -8,7 +8,7 @@ const board = join(__dirname, 'serial.js');
 let content = readFileSync(board).toString();
 
 for (const [key, value] of Object.entries(devDependencies)) {
-  if (/^@?xterm/.test(key)) {
+  if (/^@?(?:xterm|codedent)/.test(key)) {
     const ref = key.split('/').pop().replace(/-/g, '_').toUpperCase();
     const ver = value.replace(/[^0-9.]/g, '');
     content = content.replace(

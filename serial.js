@@ -13,6 +13,7 @@ const MACHINE = [
 
 // Xterm.js dependencies via CDN
 const CDN = 'https://cdn.jsdelivr.net/npm';
+const CODEDENT = '0.1.2';
 const XTERM = '5.3.0';
 const ADDON_FIT = '0.10.0';
 const ADDON_WEB_LINKS = '0.11.0';
@@ -36,6 +37,7 @@ const dependencies = ({ ownerDocument }) => {
     );
   }
   return [
+    import(`${CDN}/codedent@${CODEDENT}/+esm`),
     import(`${CDN}/xterm@${XTERM}/+esm`),
     import(`${CDN}/@xterm/addon-fit@${ADDON_FIT}/+esm`),
     import(`${CDN}/@xterm/addon-web-links@${ADDON_WEB_LINKS}/+esm`),
@@ -122,6 +124,7 @@ export default function Board({
   ondisconnect = options.ondisconnect,
   onerror = options.onerror,
   ondata = options.ondata,
+  onresult = parse,
   theme = options.theme,
 } = options) {
   let evaluating = 0;
@@ -131,7 +134,7 @@ export default function Board({
   let element = null;
   let name = 'unknown';
   let accumulator = '';
-  let aborter, readerClosed, writer, writerClosed;
+  let aborter, dedent, readerClosed, writer, writerClosed;
 
   // last meaningful line
   const lml = () => accumulator.split(ENTER).at(-2);
@@ -145,6 +148,11 @@ export default function Board({
     get name() { return name },
     get terminal() { return terminal },
 
+    /**
+     * On user action, connects the board and bootstrap an Xterm.js REPL in the target node.
+     * @param {string | Element} target where the REPL shows its output or accepts its input.
+     * @returns
+     */
     connect: async target => {
       if (port) return board;
       if (typeof target === 'string') {
@@ -160,6 +168,7 @@ export default function Board({
         port = await navigator.serial.requestPort();
 
         const [
+          { default: codedent },
           { Terminal },
           { FitAddon },
           { WebLinksAddon },
@@ -168,6 +177,8 @@ export default function Board({
         const { background, foreground } = theme;
         const color = style(target, foreground, 'color');
         const behind = style(target, background, 'background-color');
+
+        dedent = codedent;
 
         terminal = new Terminal({
           cursorBlink: true,
@@ -288,6 +299,9 @@ export default function Board({
       }
     },
 
+    /**
+     * Destroy the terminal after disconnecting the board.
+     */
     disconnect: async () => {
       if (port) {
         const sp = port;
@@ -308,20 +322,26 @@ export default function Board({
       }
     },
 
+    /**
+     * Evaluate code and optionally returns last line, if single reference, after a `json.dumps`.
+     * @param {string} code Python code to evaluate
+     * @param {{ hidden?: boolean }} [options] if `hidden` is true, show all lines/errors on terminal
+     * @returns {Promise<any>} if last line of the `code` was a single reference, it returns its JSON parsed value
+     */
     eval: async (code, { hidden = true } = {}) => {
       if (port) {
         evaluating = 1;
         showEval = !hidden;
         let outcome;
         const lines = [];
-        await exec(code, writer, lines);
+        await exec(dedent(code), writer, lines);
         while (lines.length && !lines.at(-1).trim()) lines.pop();
         const result = lines.at(-1);
         if (/^[a-zA-Z0-9._]+$/.test(result)) {
           await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);
           evaluating = 2;
           while (!accumulator.endsWith(END)) await sleep(1);
-          try { outcome = parse(lml()); }
+          try { outcome = onresult(lml()); }
           finally { accumulator = ''; }
         }
         evaluating = 0;
@@ -331,6 +351,28 @@ export default function Board({
       else onerror(reason('eval'));
     },
 
+    /**
+     * Set the board in paste mode then send the whole code to evaluate.
+     * @param {string} code Python code to evaluate
+     * @param {{ hidden?: boolean }} [options] if `hidden` is true, show all lines/errors on terminal
+     */
+    paste: async (code, { hidden = true } = {}) => {
+      if (port) {
+        evaluating = 1;
+        showEval = !hidden;
+        await writer.write(CONTROL_E);
+        await exec(dedent(code), writer);
+        await writer.write(CONTROL_D);
+        evaluating = 0;
+        showEval = false;
+      }
+      else onerror(reason('paste'));
+    },
+
+    /**
+     * Reset the board and put it back in REPL mode + focus.
+     * @param {number} delay how long before the REPL should be reactivated
+     */
     reset: async (delay = 500) => {
       if (port) {
         await writer.write(CONTROL_D);
@@ -347,6 +389,10 @@ export default function Board({
       else onerror(reason('reset'));
     },
 
+    /**
+     * Raw write to the board any string as it is.
+     * @param {string} code any raw string to write directly to the board
+     */
     write: async code => {
       if (port) await writer.write(code);
       else onerror(reason('write'));
