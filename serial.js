@@ -20,6 +20,7 @@ const ADDON_WEB_LINKS = '0.11.0';
 
 const { assign } = Object;
 const { parse } = JSON;
+const { serial } = navigator;
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -165,7 +166,10 @@ export default function Board({
         const libs = dependencies(target);
 
         element = target;
-        port = await navigator.serial.requestPort();
+
+        port = await serial.getPorts()
+          .then(ports => ports.map(port => port.getInfo()))
+          .then(filters => serial.requestPort({ filters }));
 
         const [
           { default: codedent },
