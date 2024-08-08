@@ -30,5 +30,13 @@
     "codedent": "^0.1.2",
     "static-handler": "^0.4.3",
     "xterm": "^5.3.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WebReflection/micro-repl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WebReflection/micro-repl/issues"
+  },
+  "homepage": "https://github.com/WebReflection/micro-repl#readme"
 }
