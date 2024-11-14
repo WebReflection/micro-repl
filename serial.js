@@ -3,10 +3,12 @@ const CONTROL_D = '\x04';
 const CONTROL_E = '\x05';
 const ENTER = '\r\n';
 const END = `${ENTER}>>> `;
+const EXPRESSION = '__code_last_line_expression__';
 const LINE_SEPARATOR = /(?:\r\n|\r|\n)/;
 const MACHINE = [
   'from sys import implementation as _',
   'print(hasattr(_, "_machine") and _._machine or _.name)',
+  '_=None',
   'del _',
   ENTER,
 ].join(';');
@@ -21,6 +23,7 @@ const ADDON_WEB_LINKS = '0.11.0';
 const { assign } = Object;
 const { parse } = JSON;
 const { serial } = navigator;
+const defaultOptions = { hidden: true };
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -59,7 +62,11 @@ const noop = () => {};
  * @param {string} action 
  * @returns {Error}
  */
-const reason = action => new Error(`Unable to ${action} when disconnected`);
+const reason = (action, evaluating) => new Error(
+  evaluating ?
+    `Unable to ${action} while evaluating` :
+    `Unable to ${action} when disconnected`
+);
 
 const sleep = async delay => new Promise(res => setTimeout(res, delay));
 
@@ -332,27 +339,50 @@ export default function Board({
      * @param {{ hidden?: boolean }} [options] if `hidden` is true, show all lines/errors on terminal
      * @returns {Promise<any>} if last line of the `code` was a single reference, it returns its JSON parsed value
      */
-    eval: async (code, { hidden = true } = {}) => {
-      if (port) {
+    eval: async (code, { hidden = true } = defaultOptions) => {
+      if (port && !evaluating) {
         evaluating = 1;
         showEval = !hidden;
-        let outcome;
-        const lines = [];
-        await exec(dedent(code), writer, lines);
+        let outcome = null;
+        const lines = dedent(code).split(LINE_SEPARATOR);
         while (lines.length && !lines.at(-1).trim()) lines.pop();
-        const result = lines.at(-1);
-        if (/^[a-zA-Z0-9._]+$/.test(result)) {
-          await writer.write(`import json;print(json.dumps(${result}))${ENTER}`);
+        let asRef = false, asPatch = false, result = '';
+        if (lines.length) {
+          result = lines.at(-1);
+          asRef = /^[a-zA-Z0-9._]+$/.test(result);
+          if (!asRef && /^\S+/.test(result) && !/[;=]/.test(result)) {
+            asRef = asPatch = true;
+            lines.pop();
+            lines.push(`${EXPRESSION}=${result}`, EXPRESSION);
+            result = EXPRESSION;
+          }
+          await exec(lines.join(ENTER), writer);
+        }
+        if (asRef) {
+          await writer.write(
+            `import json;print(json.dumps(${result}))${ENTER}`
+          );
           evaluating = 2;
           while (!accumulator.endsWith(END)) await sleep(1);
           try { outcome = onresult(lml()); }
-          finally { accumulator = ''; }
+          finally {
+            accumulator = '';
+            evaluating = 0;
+            showEval = false;
+          }
         }
-        evaluating = 0;
-        showEval = false;
+        else {
+          evaluating = 0;
+          showEval = false;
+        }
+        // free ram on patched code evaluation
+        if (asPatch) {
+          await board.paste(`${EXPRESSION}=None`, defaultOptions);
+          terminal.write('\x1b[M\x1b[A');
+        }
         return outcome;
       }
-      else onerror(reason('eval'));
+      else onerror(reason('eval', evaluating));
     },
 
     /**
@@ -360,8 +390,8 @@ export default function Board({
      * @param {string} code Python code to evaluate
      * @param {{ hidden?: boolean }} [options] if `hidden` is true, show all lines/errors on terminal
      */
-    paste: async (code, { hidden = true } = {}) => {
-      if (port) {
+    paste: async (code, { hidden = true } = defaultOptions) => {
+      if (port && !evaluating) {
         evaluating = 1;
         showEval = !hidden;
         await writer.write(CONTROL_E);
@@ -370,7 +400,7 @@ export default function Board({
         evaluating = 0;
         showEval = false;
       }
-      else onerror(reason('paste'));
+      else onerror(reason('paste', evaluating));
     },
 
     /**
@@ -390,7 +420,7 @@ export default function Board({
         }
         terminal.focus();
       }
-      else onerror(reason('reset'));
+      else onerror(reason('reset', evaluating));
     },
 
     /**
@@ -398,8 +428,8 @@ export default function Board({
      * @param {string} code any raw string to write directly to the board
      */
     write: async code => {
-      if (port) await writer.write(code);
-      else onerror(reason('write'));
+      if (port && !evaluating) await writer.write(code);
+      else onerror(reason('write', evaluating));
     },
   };
 
