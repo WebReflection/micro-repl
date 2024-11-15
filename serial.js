@@ -147,6 +147,13 @@ export default function Board({
   // last meaningful line
   const lml = () => accumulator.split(ENTER).at(-2);
 
+  const forIt = async () => {
+    while (!accumulator.endsWith(END)) await sleep(1);
+    const result = lml();
+    accumulator = '';
+    return result;
+  };
+
   const board = {
     // board instanceof Board
     __proto__: Board.prototype,
@@ -363,10 +370,10 @@ export default function Board({
             `import json;print(json.dumps(${result}))${ENTER}`
           );
           evaluating = 2;
-          while (!accumulator.endsWith(END)) await sleep(1);
-          try { outcome = onresult(lml()); }
+          try {
+            outcome = onresult(await forIt());
+          }
           finally {
-            accumulator = '';
             evaluating = 0;
             showEval = false;
           }
@@ -395,11 +402,8 @@ export default function Board({
         await writer.write(CONTROL_E);
         await exec(dedent(code), writer);
         await writer.write(CONTROL_D);
-        if (hidden) {
-          while (!accumulator.endsWith(END)) await sleep(1);
-          accumulator = '';
-          // terminal.write('\x1b[M\x1b[A');
-        }
+        if (hidden) await forIt();
+        // terminal.write('\x1b[M\x1b[A');
         evaluating = 0;
         showEval = false;
       }
