@@ -376,10 +376,8 @@ export default function Board({
           showEval = false;
         }
         // free ram on patched code evaluation
-        if (asPatch) {
+        if (asPatch)
           await board.paste(`${EXPRESSION}=None`, defaultOptions);
-          terminal.write('\x1b[M\x1b[A');
-        }
         return outcome;
       }
       else onerror(reason('eval', evaluating));
@@ -392,11 +390,16 @@ export default function Board({
      */
     paste: async (code, { hidden = true } = defaultOptions) => {
       if (port && !evaluating) {
-        evaluating = 1;
         showEval = !hidden;
+        evaluating = hidden ? 2 : 1;
         await writer.write(CONTROL_E);
         await exec(dedent(code), writer);
         await writer.write(CONTROL_D);
+        if (hidden) {
+          while (!accumulator.endsWith(END)) await sleep(1);
+          accumulator = '';
+          // terminal.write('\x1b[M\x1b[A');
+        }
         evaluating = 0;
         showEval = false;
       }
