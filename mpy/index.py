@@ -14,11 +14,11 @@ def on_connect():
         led.hidden = False
         led.onclick = toggle(board)
 
-    # Test implicit expression as last line
-    print(await board.eval("""
-        import os
-        os.listdir('/')
-    """))
+    # # Test implicit expression as last line
+    # print(await board.eval("""
+    #     import os
+    #     os.listdir('/')
+    # """))
 
 def on_disconnect():
     connect.disabled = False
