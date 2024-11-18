@@ -148,7 +148,7 @@ export default function Board({
   const lml = () => accumulator.split(ENTER).at(-2);
 
   const forIt = async () => {
-    while (!accumulator.endsWith(END)) await sleep(1);
+    while (!accumulator.endsWith(END)) await sleep(10);
     const result = lml();
     accumulator = '';
     return result;
