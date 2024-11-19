@@ -27,6 +27,8 @@ def on_disconnect():
     led.hidden = True
     message.hidden = True
     file.hidden = True
+    if not progress.hidden:
+        progress.replaceWith(file)
 
 def on_error(error):
     window.console.warn(error)
@@ -48,6 +50,8 @@ async def on_reset(error):
     board.terminal.reset()
     await board.reset()
     reset.disabled = False
+    if not progress.hidden:
+        progress.replaceWith(file)
 
 def write_chunk(ui8, start, end):
     import json
@@ -57,24 +61,17 @@ def write_chunk(ui8, start, end):
 
 async def on_change(event):
     currentTarget = event.currentTarget
+
     for file in currentTarget.files:
-        # create a utf-8 list of bytes
-        ui8 = window.Uint8Array.new(await file.arrayBuffer())
-        name = file.name
-        size = file.size
-        # up to 32 seems to be fine
-        # over 32 is not always fine
-        increment = 32
-        i = 0
+        def show_progress(current, total):
+            progress.value = int(current * 100 / total)
+
+        reset.disabled = True
         progress.hidden = False
         currentTarget.replaceWith(progress)
-        await board.paste(f'f=open("{name}","wb")')
-        while i < size:
-            progress.value = int(i * 100 / size)
-            await board.paste(write_chunk(ui8, i, increment))
-            i += increment
-        progress.value = 100
-        await board.paste(f'f.close()')
+        await board.upload(file.name, file, show_progress)
+        reset.disabled = False
+
     currentTarget.value = ''
     progress.replaceWith(currentTarget)
     progress.value = 0
