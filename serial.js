@@ -438,7 +438,6 @@ export default function Board({
           new Uint8Array(await content.arrayBuffer())
         ;
         const { stringify } = JSON;
-        const { floor } = Math;
         const { length } = view;
         let increment = 32, i = 0;
         evaluating = 2;
