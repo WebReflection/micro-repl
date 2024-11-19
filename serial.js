@@ -1,3 +1,5 @@
+const CONTROL_A = '\x01';
+const CONTROL_B = '\x02';
 const CONTROL_C = '\x03';
 const CONTROL_D = '\x04';
 const CONTROL_E = '\x05';
@@ -23,7 +25,7 @@ const ADDON_WEB_LINKS = '0.11.0';
 const { assign } = Object;
 const { parse } = JSON;
 const { serial } = navigator;
-const defaultOptions = { hidden: true };
+const defaultOptions = { hidden: true, raw: false };
 
 const createWriter = writer => chunk => writer.write(chunk);
 
@@ -48,10 +50,13 @@ const dependencies = ({ ownerDocument }) => {
   ];
 };
 
-const exec = async (code, writer, lines = []) => {
+const exec = async (code, writer, raw = false) => {
   for (const line of code.split(LINE_SEPARATOR)) {
-    lines.push(line);
     await writer.write(`${line}\r`);
+    await sleep(10);
+  }
+  if (raw) {
+    await writer.write(CONTROL_D);
     await sleep(10);
   }
 };
@@ -393,15 +398,16 @@ export default function Board({
     /**
      * Set the board in paste mode then send the whole code to evaluate.
      * @param {string} code Python code to evaluate
-     * @param {{ hidden?: boolean }} [options] if `hidden` is true, show all lines/errors on terminal
+     * @param {{ hidden?: boolean, raw?: boolean }} [options] if `hidden` is `false`,
+     *  it shows all lines/errors on terminal. If `raw` is `true`, it puts the terminal in raw mode.
      */
-    paste: async (code, { hidden = true } = defaultOptions) => {
+    paste: async (code, { hidden = true, raw = false } = defaultOptions) => {
       if (port && !evaluating) {
         showEval = !hidden;
         evaluating = hidden ? 2 : 1;
-        await writer.write(CONTROL_E);
-        await exec(dedent(code), writer);
-        await writer.write(CONTROL_D);
+        await writer.write(raw ? CONTROL_A : CONTROL_E);
+        await exec(dedent(code), writer, raw);
+        await writer.write(raw ? CONTROL_B : CONTROL_D);
         if (hidden) await forIt();
         // terminal.write('\x1b[M\x1b[A');
         evaluating = 0;

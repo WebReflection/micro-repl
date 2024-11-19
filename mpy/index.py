@@ -71,7 +71,7 @@ async def on_change(event):
         await board.paste(f'f=open("{name}","wb")')
         while i < size:
             progress.value = int(i * 100 / size)
-            await board.paste(write_chunk(ui8, i, increment), hidden = True)
+            await board.paste(write_chunk(ui8, i, increment))
             i += increment
         progress.value = 100
         await board.paste(f'f.close()')
