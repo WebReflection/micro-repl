@@ -429,36 +429,58 @@ export default function Board({
      */
     upload: async (path, content, onprogress = noop) => {
       if (port && !evaluating) {
-        const update = i => {
-          const value = i === length ? 100 : (i * 100 / length).toFixed(2);
+        const { stringify } = JSON;
+        const { fromCharCode } = String;
+
+        const base64 = view => {
+          const b64 = '';
+          for (let args = 2000, i = 0; i < view.length; i += args)
+            b64 += fromCharCode(...view.slice(i, i + args));
+          return btoa(b64);
+        };
+
+        const update = (i, length) => {
+          onprogress(i, length);
+          const value = (i * 100 / length).toFixed(2);
           terminal.write(`\x1b[M... uploading ${path} ${value}% `);
         };
+
         const view = typeof content === 'string' ?
           new TextEncoder().encode(content) :
           new Uint8Array(await content.arrayBuffer())
         ;
-        const { stringify } = JSON;
-        const { length } = view;
-        let increment = 32, i = 0;
+
+        const code = dedent(`
+            with open(${stringify(path)},"wb") as f:
+              import binascii
+              f.write(binascii.a2b_base64("${base64(view)}"))
+              f.close()
+        `);
+
+        let i = 0, { length } = code;
+
         evaluating = 2;
-        await writer.write(`f=open(${stringify(path)},"wb")\r`);
-        await sleep(10);
+        // enter raw mode
+        await writer.write(CONTROL_A);
+        // notify beginning
+        update(i, length);
+        // write the whole code
         while (i < length) {
-          onprogress(i, length);
-          update(i);
-          const chunks = stringify([...view.slice(i, i + increment)]);
-          await writer.write(`f.write("".join([chr(c) for c in ${chunks}]))\r`);
-          while (!/^\d+$/.test(lml())) await sleep(5);
-          accumulator = '';
-          i += increment;
+          await writer.write(code[i++]);
+          update(i, length);
+          // pause every 256 chars to allow UI
+          // to show changes (too greedy otherwise)
+          if (!(i % 256)) await sleep(0);
         }
-        onprogress(length, length);
-        update(length);
-        await writer.write(`f.close()\r`);
-        await sleep(10);
+        // commit raw code
+        await writer.write(CONTROL_D);
+        // exit raw mode
+        await writer.write(CONTROL_B);
+        terminal.write(`\x1b[M... decoding ${path} `);
+        await forIt();
         evaluating = 0;
-        accumulator = '';
-        // terminal.write('\x1b[M\x1b[A');
+        terminal.write(`\x1b[M... uploaded ${path} ${ENTER}>>> `);
+        terminal.focus();
       }
       else onerror(reason('upload', evaluating));
     },
