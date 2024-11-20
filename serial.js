@@ -1,3 +1,5 @@
+import { encode } from 'https://esm.run/buffer-to-base64/encode';
+
 const CONTROL_A = '\x01';
 const CONTROL_B = '\x02';
 const CONTROL_C = '\x03';
@@ -430,14 +432,6 @@ export default function Board({
     upload: async (path, content, onprogress = noop) => {
       if (port && !evaluating) {
         const { stringify } = JSON;
-        const { fromCharCode } = String;
-
-        const base64 = view => {
-          const b64 = '';
-          for (let args = 2000, i = 0; i < view.length; i += args)
-            b64 += fromCharCode(...view.slice(i, i + args));
-          return btoa(b64);
-        };
 
         const update = (i, length) => {
           onprogress(i, length);
@@ -450,11 +444,14 @@ export default function Board({
           new Uint8Array(await content.arrayBuffer())
         ;
 
+        const bytes = `binascii.a2b_base64(${stringify(await encode(view))})`;
         const code = dedent(`
             with open(${stringify(path)},"wb") as f:
-              import binascii
-              f.write(binascii.a2b_base64("${base64(view)}"))
-              f.close()
+              import binascii, deflate, io
+              with deflate.DeflateIO(io.BytesIO(${bytes}), deflate.ZLIB) as d:
+                  f.write(d.read())
+                  f.close()
+                  d.close()
         `);
 
         let i = 0, { length } = code;
