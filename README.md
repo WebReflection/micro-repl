@@ -4,10 +4,10 @@
 
 An easy, SerialPort based, MicroPython REPL for micro controllers.
 
-  * **[Live Board Demo](https://webreflection.github.io/micro-repl/board/)**
+  * **[Live Serial Demo](https://webreflection.github.io/micro-repl/board/)**
   * **[Live PyScript Demo](https://webreflection.github.io/micro-repl/mpy/)** which uses *MicroPython* on the browser to communicate with the boards 🤯
 
-### Supported Boards
+### Supported Serials
 
 It is very likely that your *MicroPython* based board works too but these have been manually, and personally, tested during the development of this module:
 
@@ -28,14 +28,15 @@ The currently maintained and developed export is `micro-repl/serial` (*previousl
   * tab completion works out of the box too
   * every *Control+X* combination just works
   * stopping running code via *Control+C* also works
+  * uploading data (text or binary files) works too
   * pasting code also works
   * paste mode never overflows the writes (big files copy pasted with ease)
   * safe (after prompt) reboot on *Control-D* when not inside a *paste mode* session
   * `ondata(buffer:Uint8Array)` passes along, while interacting, every single char the user is asking for
   * *AutoFit* and *WebLinks* plugins available out of the box
   * all imports are dynamic so it's size is still minimal before its usage
-  * `eval` method, if awaited and the end of the code has a reference, will return that value, if any, beside evaluating code without showing it on *REPL* shell. If the extra `options` reference `hidden` value is `false`, it also shows the evaluated code while streaming it to the board.
-  * `paste` method to pass along code in "*paste mode*" with ease
+  * `eval` method, if awaited and the end of the code has a reference or an expression, will return that value, if any, beside evaluating code without showing it on *REPL* shell. If the extra `options` reference `hidden` value is `false`, it also shows the evaluated code while streaming it to the board.
+  * `paste` method to pass along code in "*paste mode*" with ease, where `raw: true` is also available
 
 The `micro-repl/board` alias still exists but it's now `micro-repl/serial` instead, to eventually allow `micro-repl/bt` and others within the same ease of use.
 
@@ -45,10 +46,10 @@ The easiest way to use `micro-repl/serial` is via *CDN*:
 
 ```html
 <script type="module">
-  import Board from 'https://esm.run/micro-repl/serial';
+  import Serial from 'https://esm.run/micro-repl/serial';
 
-  // either Board(...) or new Board(...)
-  const board = Board({
+  // either Serial(...) or new Serial(...)
+  const board = Serial({
     // all optionals
     baudRate: 9600, // defaults to 115200
     onconnect() { console.info('connected') },
@@ -71,13 +72,13 @@ The easiest way to use `micro-repl/serial` is via *CDN*:
 <div id="repl"></div>
 ```
 
-### micr-repl/board TS signature
+### micr-repl/serial TS signature
 
 Documented via JSDoc TS, these are all explicit TS details around this module's API.
 
 #### options
 
-These are all optional fields that can be passed when creating a new *Board*.
+These are all optional fields that can be passed when creating a new *Serial*.
 
 ```ts
 type MicroREPLOptions = {
@@ -104,12 +105,12 @@ type MicroREPLOptions = {
 }
 ```
 
-#### board
+#### serial board
 
-A *board* can be created via `new Board(options)` or just direct `Board(options)` ( <sup>which is more Pythonic</sup> ) and its returned reference is always an `instanceof Board`.
+A *serial board* can be created via `new Serial(options)` or just direct `Serial(options)` ( <sup>which is more Pythonic</sup> ) and its returned reference is always an `instanceof Serial`.
 
 ```ts
-type MicroREPLBoard = {
+type MicroREPLSerialBoard = {
   // `true` when connected, `false` otherwise
   readonly connected: boolean;
   // the passed `baudRate` option
@@ -121,7 +122,7 @@ type MicroREPLBoard = {
   // ⚠️ must be done on user action !!!
   // connects the board and show the REPL in the specified `target`
   // `target` can be either a DOM Element or an element ID or a CSS selector.
-  connect: (target: Element | string) => Promise<MicroREPLBoard | void>;
+  connect: (target: Element | string) => Promise<MicroREPLSerialBoard | void>;
   // disconnect the board and invoke ondisconnect
   disconnect: () => Promise<void>;
   // soft-reset the board and put it back into REPL mode
@@ -135,7 +136,9 @@ type MicroREPLBoard = {
   // while evaluating code.
   eval: (code: string, options?: { hidden:boolean }) => Promise<any>;
   // enter paste mode, write all code, then exit from paste mode
-  paste: (code: string, options?: { hidden:boolean }) => Promise<void>;
+  paste: (code: string, options?: { hidden:boolean, raw:boolean }) => Promise<void>;
+  // upload content as text or `File` and save it as `path` name
+  upload: (path: string, content: string | File, on_progress?: (current:number, total:number) => void) => Promise<void>;
 }
 ```
 
