@@ -27,8 +27,6 @@ const { parse } = JSON;
 const { serial } = navigator;
 const defaultOptions = { hidden: true, raw: false };
 
-const createWriter = writer => chunk => writer.write(chunk);
-
 /**
  * @param {Element} target
  * @returns {Promise<unknown>[]}
@@ -153,7 +151,7 @@ export default function Board({
   const lml = () => accumulator.split(ENTER).at(-2);
 
   const forIt = async () => {
-    while (!accumulator.endsWith(END)) await sleep(10);
+    while (!accumulator.endsWith(END)) await sleep(5);
     const result = lml();
     accumulator = '';
     return result;
@@ -232,26 +230,24 @@ export default function Board({
         };
 
         const writable = new WritableStream({
-          write: createWriter({
-            write(chunk) {
-              if (evaluating) {
-                if (1 < evaluating)
-                  accumulator += decoder.decode(chunk);
-                else if (showEval)
-                  reveal(chunk);
-              }
-              else if (waitForMachine) {
+          write(chunk) {
+            if (evaluating) {
+              if (1 < evaluating)
                 accumulator += decoder.decode(chunk);
-                if (accumulator.endsWith(END) && accumulator.includes(MACHINE)) {
-                  machine.resolve(lml());
-                  accumulator = '';
-                }
-              }
-              else {
+              else if (showEval)
                 reveal(chunk);
+            }
+            else if (waitForMachine) {
+              accumulator += decoder.decode(chunk);
+              if (accumulator.endsWith(END) && accumulator.includes(MACHINE)) {
+                machine.resolve(lml());
+                accumulator = '';
               }
             }
-          })
+            else {
+              reveal(chunk);
+            }
+          }
         });
 
         aborter = new AbortController;
@@ -271,6 +267,10 @@ export default function Board({
                   pastMode = true;
                 else if (code === 'KeyD') {
                   event.preventDefault();
+                  if (evaluating) {
+                    evaluating = 0;
+                    accumulator = '';
+                  }
                   board.reset();
                   return false;
                 }
@@ -279,14 +279,19 @@ export default function Board({
             // prevent errors with huge content passed in paste mode
             else if (pastMode && composed && ctrlKey && shiftKey && code === 'KeyV') {
               event.preventDefault();
-              navigator.clipboard.readText().then(code => exec(code, writer));
+              navigator.clipboard.readText().then(async code => {
+                while (evaluating) await sleep(10);
+                await exec(code, writer);
+              });
               return false;
             }
           }
           return true;
         });
 
-        terminal.onData(createWriter(writer));
+        terminal.onData(chunk => {
+          if (!evaluating) writer.write(chunk);
+        });
 
         const fitAddon = new FitAddon;
         terminal.loadAddon(fitAddon);
@@ -414,6 +419,70 @@ export default function Board({
         showEval = false;
       }
       else onerror(reason('paste', evaluating));
+    },
+
+    /**
+     * Upload a file to the board showing some progress while doing that.
+     * @param {string} path the name of the file to upload.
+     * @param {string | File | Blob} content the file content as string or blob or as file.
+     * @param {(current, total) => void} onprogress an optional callback to receive current uploaded and total.
+     */
+    upload: async (path, content, onprogress = noop) => {
+      if (port && !evaluating) {
+        const { stringify } = JSON;
+        const { fromCharCode } = String;
+
+        const base64 = view => {
+          const b64 = '';
+          for (let args = 2000, i = 0; i < view.length; i += args)
+            b64 += fromCharCode(...view.slice(i, i + args));
+          return btoa(b64);
+        };
+
+        const update = (i, length) => {
+          onprogress(i, length);
+          const value = (i * 100 / length).toFixed(2);
+          terminal.write(`\x1b[M... uploading ${path} ${value}% `);
+        };
+
+        const view = typeof content === 'string' ?
+          new TextEncoder().encode(content) :
+          new Uint8Array(await content.arrayBuffer())
+        ;
+
+        const code = dedent(`
+            with open(${stringify(path)},"wb") as f:
+              import binascii
+              f.write(binascii.a2b_base64("${base64(view)}"))
+              f.close()
+        `);
+
+        let i = 0, { length } = code;
+
+        evaluating = 2;
+        // enter raw mode
+        await writer.write(CONTROL_A);
+        // notify beginning
+        update(i, length);
+        // write the whole code
+        while (i < length) {
+          await writer.write(code[i++]);
+          update(i, length);
+          // pause every 256 chars to allow UI
+          // to show changes (too greedy otherwise)
+          if (!(i % 256)) await sleep(0);
+        }
+        // commit raw code
+        await writer.write(CONTROL_D);
+        // exit raw mode
+        await writer.write(CONTROL_B);
+        terminal.write(`\x1b[M... decoding ${path} `);
+        await forIt();
+        evaluating = 0;
+        terminal.write(`\x1b[M... uploaded ${path} ${ENTER}>>> `);
+        terminal.focus();
+      }
+      else onerror(reason('upload', evaluating));
     },
 
     /**
