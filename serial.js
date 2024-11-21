@@ -433,7 +433,7 @@ export default function Board({
         const { fromCharCode } = String;
 
         const base64 = view => {
-          const b64 = '';
+          let b64 = '';
           for (let args = 2000, i = 0; i < view.length; i += args)
             b64 += fromCharCode(...view.slice(i, i + args));
           return btoa(b64);
