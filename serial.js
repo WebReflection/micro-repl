@@ -62,7 +62,7 @@ const exec = async (code, writer, raw = false) => {
 const noop = () => {};
 
 /**
- * @param {string} action 
+ * @param {string} action
  * @returns {Error}
  */
 const reason = (action, evaluating) => new Error(
@@ -479,8 +479,15 @@ export default function Board({
         terminal.write(`\x1b[M... decoding ${path} `);
         await forIt();
         evaluating = 0;
-        terminal.write(`\x1b[M... uploaded ${path} ${ENTER}>>> `);
+        terminal.write(`\x1b[M... verifying ${path} `);
+        const result = view.length === await board.eval(`
+          import os
+          os.stat(${stringify(path)})[6]
+        `);
+        const message = result ? 'uploaded' : '\x1b[1mfailed\x1b[22m to upload';
+        terminal.write(`\x1b[M... ${message} ${path} ${ENTER}>>> `);
         terminal.focus();
+        return result
       }
       else onerror(reason('upload', evaluating));
     },
