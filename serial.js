@@ -508,7 +508,6 @@ export default function Board({
         // reset the board
         await writer.write(CONTROL_D);
         await sleep(delay);
-        await writer.write(CONTROL_C);
         terminal.focus();
       }
       else onerror(reason('reset', evaluating));
