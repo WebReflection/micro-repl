@@ -6,6 +6,7 @@ const CONTROL_E = '\x05';
 const ENTER = '\r\n';
 const END = `${ENTER}>>> `;
 const SOFT_REBOOT = 'MPY: soft reboot';
+const CONTROL_C_REPL = 'Ctrl+C for the REPL';
 const EXPRESSION = '__code_last_line_expression__';
 const LINE_SEPARATOR = /(?:\r\n|\r|\n)/;
 const MACHINE = [
@@ -27,6 +28,9 @@ const { assign } = Object;
 const { parse } = JSON;
 const { serial } = navigator;
 const defaultOptions = { hidden: true, raw: false };
+
+const decoder = new TextDecoder;
+const encoder = new TextEncoder;
 
 /**
  * @param {Element} target
@@ -138,13 +142,13 @@ export default function Board({
   ondata = options.ondata,
   onresult = parse,
   theme = options.theme,
+  freshStart = true,
 } = options) {
   let evaluating = 0;
   let resetting = false;
   let showEval = false;
   let port = null;
   let terminal = null;
-  let element = null;
   let name = 'unknown';
   let accumulator = '';
   let aborter, dedent, readerClosed, writer, writerClosed;
@@ -184,8 +188,6 @@ export default function Board({
       try {
         const libs = dependencies(target);
 
-        element = target;
-
         port = await serial.getPorts()
           .then(ports => ports.map(port => port.getInfo()))
           .then(filters => serial.requestPort({ filters }));
@@ -215,11 +217,10 @@ export default function Board({
           },
         });
 
-        const encoder = new TextEncoderStream;
-        writerClosed = encoder.readable.pipeTo(port.writable);
-        writer = encoder.writable.getWriter();
+        const tes = new TextEncoderStream;
+        writerClosed = tes.readable.pipeTo(port.writable);
+        writer = tes.writable.getWriter();
 
-        const decoder = new TextDecoder;
         const machine = Promise.withResolvers();
         let waitForMachine = false;
 
@@ -254,9 +255,9 @@ export default function Board({
                   const chunks = value.split(LINE_SEPARATOR);
                   for (let i = 0; i < chunks.length; i++) {
                     if (chunks[i] === SOFT_REBOOT)
-                      chunks[i] += ' - Ctrl+C for the REPL';
+                      chunks[i] += ` - ${CONTROL_C_REPL}`;
                   }
-                  chunk = new TextEncoder().encode(chunks.join(ENTER));
+                  chunk = encoder.encode(chunks.join(ENTER));
                 }
               }
               reveal(chunk);
@@ -314,22 +315,27 @@ export default function Board({
         fitAddon.fit();
         terminal.focus();
 
-        // bootstrap with board name details
-        await writer.write(CONTROL_C);
-        await sleep(options.baudRate * 50 / baudRate);
-        waitForMachine = true;
+        if (freshStart) {
+          // bootstrap with board name details
+          await writer.write(CONTROL_C);
+          await sleep(options.baudRate * 50 / baudRate);
+          waitForMachine = true;
 
-        // enter paste mode - no history attached
-        await writer.write(CONTROL_E);
-        await writer.write(MACHINE);
-        await writer.write(CONTROL_D);
+          // enter paste mode - no history attached
+          await writer.write(CONTROL_E);
+          await writer.write(MACHINE);
+          await writer.write(CONTROL_D);
 
-        name = await machine.promise;
-        waitForMachine = false;
+          name = await machine.promise;
+          waitForMachine = false;
 
-        // clean up latest row and start fresh
-        terminal.write('\x1b[M');
-        terminal.write(`${name}${END}`);
+          // clean up latest row and start fresh
+          terminal.write('\x1b[M');
+          terminal.write(`${name}${END}`);
+        }
+        else {
+          terminal.write(`${CONTROL_C_REPL}${ENTER}`);
+        }
 
         onconnect();
 
@@ -460,7 +466,7 @@ export default function Board({
         };
 
         const view = typeof content === 'string' ?
-          new TextEncoder().encode(content) :
+          encoder.encode(content) :
           new Uint8Array(await content.arrayBuffer())
         ;
 
