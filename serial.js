@@ -498,15 +498,17 @@ export default function Board({
      */
     reset: async (delay = 500) => {
       if (port) {
-        await writer.write(CONTROL_D);
-        while (port) {
+        if (evaluating) {
+          // interrupt current program
+          await writer.write(CONTROL_C);
           await sleep(delay);
-          // for boards losing the REPL mode on soft-reset
-          if (port && /\n $/.test(element.innerText))
-            await writer.write(CONTROL_C);
-          else
-            break;
+          evaluating = 0;
+          accumulator = '';
         }
+        // reset the board
+        await writer.write(CONTROL_D);
+        await sleep(delay);
+        await writer.write(CONTROL_C);
         terminal.focus();
       }
       else onerror(reason('reset', evaluating));
