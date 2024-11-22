@@ -5,6 +5,7 @@ const CONTROL_D = '\x04';
 const CONTROL_E = '\x05';
 const ENTER = '\r\n';
 const END = `${ENTER}>>> `;
+const SOFT_REBOOT = 'MPY: soft reboot';
 const EXPRESSION = '__code_last_line_expression__';
 const LINE_SEPARATOR = /(?:\r\n|\r|\n)/;
 const MACHINE = [
@@ -139,6 +140,7 @@ export default function Board({
   theme = options.theme,
 } = options) {
   let evaluating = 0;
+  let resetting = false;
   let showEval = false;
   let port = null;
   let terminal = null;
@@ -245,6 +247,18 @@ export default function Board({
               }
             }
             else {
+              if (resetting) {
+                const value = decoder.decode(chunk);
+                if (value.includes(SOFT_REBOOT)) {
+                  resetting = false;
+                  const chunks = value.split(LINE_SEPARATOR);
+                  for (let i = 0; i < chunks.length; i++) {
+                    if (chunks[i] === SOFT_REBOOT)
+                      chunks[i] += ' - Ctrl+C for the REPL';
+                  }
+                  chunk = new TextEncoder().encode(chunks.join(ENTER));
+                }
+              }
               reveal(chunk);
             }
           }
@@ -506,6 +520,7 @@ export default function Board({
           accumulator = '';
         }
         // reset the board
+        resetting = true;
         await writer.write(CONTROL_D);
         await sleep(delay);
         terminal.focus();
