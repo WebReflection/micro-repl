@@ -42,7 +42,7 @@ board = Board({
 
 # setup the DOM
 async def on_click(event):
-    await board.connect(output)
+    await board.connect(output, True)
     window.board = board
 
 async def on_reset(error):

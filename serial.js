@@ -317,6 +317,7 @@ export default function Board({
         if (named) {
           // bootstrap with board name details
           await writer.write(CONTROL_C);
+          terminal.clear();
           await sleep(options.baudRate * 50 / baudRate);
           waitForMachine = true;
 
@@ -329,6 +330,7 @@ export default function Board({
           waitForMachine = false;
 
           // clean up latest row and start fresh
+          terminal.clear();
           terminal.write('\x1b[M');
           terminal.write(`${name}${END}`);
         }
