@@ -142,7 +142,6 @@ export default function Board({
   ondata = options.ondata,
   onresult = parse,
   theme = options.theme,
-  freshStart = true,
 } = options) {
   let evaluating = 0;
   let resetting = false;
@@ -177,7 +176,7 @@ export default function Board({
      * @param {string | Element} target where the REPL shows its output or accepts its input.
      * @returns
      */
-    connect: async target => {
+    connect: async (target, named = true) => {
       if (port) return board;
       if (typeof target === 'string') {
         target = (
@@ -315,7 +314,7 @@ export default function Board({
         fitAddon.fit();
         terminal.focus();
 
-        if (freshStart) {
+        if (named) {
           // bootstrap with board name details
           await writer.write(CONTROL_C);
           await sleep(options.baudRate * 50 / baudRate);
