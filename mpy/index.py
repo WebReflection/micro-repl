@@ -2,6 +2,9 @@ from pyscript import document, window
 from pyscript.js_modules.micro_repl import default as Board
 import json
 
+if not hasattr(window.navigator, "serial"):
+    window.alert('unsupported browser')
+
 # setup the board
 def on_connect():
     from events import keydown, toggle
