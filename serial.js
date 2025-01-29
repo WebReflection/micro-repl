@@ -335,6 +335,7 @@ export default function Board({
           terminal.write(`${name}${END}`);
         }
         else {
+          machine.resolve(name);
           terminal.write(`${CONTROL_C_REPL}${ENTER}`);
         }
 
